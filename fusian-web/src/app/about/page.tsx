@@ -9,7 +9,7 @@ export default function AboutPage() {
 
         <div className="prose prose-lg max-w-none">
           <p className="text-lg text-muted-foreground mb-6">
-            Founded in 2020, Fusian Dance Crew has become a leading force in the local dance community,
+            Founded in 2017, Fusian Dance Crew has become a leading force in the local dance community,
             bringing together passionate dancers from all backgrounds and skill levels.
           </p>
 
