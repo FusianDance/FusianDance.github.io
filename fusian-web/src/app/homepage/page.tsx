@@ -18,7 +18,7 @@ export default function Homepage() {
 
   // Show only the first 3 announcements
   const startIndex = Math.max(0, todayIndex - 3);
-  const displayedAnnouncements = announcements.slice(startIndex, todayIndex);
+  const displayedAnnouncements = announcements.slice(startIndex, todayIndex).reverse();
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">

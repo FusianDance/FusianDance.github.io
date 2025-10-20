@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       title:
-        description: 'Announcement Title'
+        description: "Announcement Title"
         required: true
         type: string
       content:
-        description: 'Announcement Content'
+        description: "Announcement Content"
         required: true
         type: string
       unixtimestamp:
-        description: 'Unix Timestamp (leave empty for current time)'
+        description: "Unix Timestamp (leave empty for current time)"
         required: false
         type: string
 
@@ -33,19 +33,12 @@ jobs:
             echo "timestamp=${{ github.event.inputs.unixtimestamp }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Escape CSV content
-        id: escape
-        run: |
-          # Escape semicolons and quotes for CSV
-          title=$(echo "${{ github.event.inputs.title }}" | sed 's/;/\\;/g' | sed 's/"/\\"/g')
-          content=$(echo "${{ github.event.inputs.content }}" | sed 's/;/\\;/g' | sed 's/"/\\"/g')
-          echo "title=$title" >> $GITHUB_OUTPUT
-          echo "content=$content" >> $GITHUB_OUTPUT
-
-      - name: Add to CSV
+      - name: Add to JSON
         run: |
           cd fusian-web/public
-          printf "\n${{ steps.escape.outputs.title }};${{ steps.escape.outputs.content }};${{ steps.timestamp.outputs.timestamp }}" >> announcements.csv
+          timestamp=${{ steps.timestamp.outputs.timestamp }}
+          # Use node to safely read/modify/write JSON. Pass values as argv to avoid shell-escaping issues.
+          node -e "const fs=require('fs');const p='announcements.json';let data=[];try{data=JSON.parse(fs.readFileSync(p,'utf8'))}catch(e){}const title=process.argv[1]||'';const content=process.argv[2]||'';const unixtimestamp=Number(process.argv[3]) * 1000;const entry={id:String(data.length),title,content,unixtimestamp};data.push(entry);fs.writeFileSync(p,JSON.stringify(data,null,2),'utf8');" -- "${{ github.event.inputs.title }}" "${{ github.event.inputs.content }}" "$timestamp"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -55,11 +48,11 @@ jobs:
           title: "Add announcement: ${{ github.event.inputs.title }}"
           body: |
             ## New Announcement Added
-            
+
             **Title:** ${{ github.event.inputs.title }}
             **Content:** ${{ github.event.inputs.content }}
             **Timestamp:** ${{ steps.timestamp.outputs.timestamp }}
-            
+
             This PR was automatically created by the Add Announcement workflow.
           branch: "add-announcement-${{ steps.timestamp.outputs.timestamp }}"
           delete-branch: true
