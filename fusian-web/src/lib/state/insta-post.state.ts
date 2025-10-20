@@ -6,26 +6,21 @@ type PostStore = {
   posts: InstaPost[];
 };
 
-type InstaPostCSVEntry = {
+type InstaPostConfigEntry = {
   html: string;
 };
 
 async function loadPostsFromCSV(): Promise<InstaPost[]> {
   const base = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, ""); // no trailing slash
-  const url = `${base}/insta-posts.csv`;
+  const url = `${base}/insta-posts.json`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to load insta-posts.csv: ${res.statusText}`);
   }
-  const csv = await res.text();
-  const parsed = Papa.parse(csv, { header: true, delimiter: ";" });
-  console.log(parsed);
-  if (parsed.errors.length > 0) {
-    throw new Error("Failed to parse CSV");
-  }
+  const data = (await res.json()) as InstaPostConfigEntry[];
 
   let count = 0;
-  const posts = (parsed.data as InstaPostCSVEntry[]).map((entry) => ({
+  const posts = data.map((entry) => ({
     id: String(count++),
     html: entry.html,
   }));
