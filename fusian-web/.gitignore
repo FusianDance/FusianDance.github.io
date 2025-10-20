@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# feature flags generated files
+/src/config/nav-items.generated.json
+/ignored-build-paths.json

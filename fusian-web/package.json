@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "node scripts/toggle-feature-flags.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
