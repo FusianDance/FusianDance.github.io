@@ -6,6 +6,7 @@ on:
     paths:
       - 'fusian-web/**'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

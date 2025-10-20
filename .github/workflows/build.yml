@@ -46,7 +46,6 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_BASE_PATH: ${{ inputs.static_export == true && '/fusian' || '' }}
 
       - name: Upload build artifacts (standard build)
         if: ${{ !inputs.static_export }}
