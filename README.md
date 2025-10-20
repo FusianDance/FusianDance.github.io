@@ -1,6 +1,6 @@
 # Fusian Dance Crew Website
 
-**[https://fusiandance.github.io/fusian/](https://fusiandance.github.io/fusian/)**
+**[https://fusiandance.github.io](https://fusiandance.github.io)**
 
 A modern Next.js website for Fusian Dance Crew built with TypeScript, Tailwind CSS, and shadcn/ui components.
 
