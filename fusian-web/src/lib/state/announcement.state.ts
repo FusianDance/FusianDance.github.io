@@ -1,33 +1,28 @@
 import { Announcement } from "../models/announcement";
 import { create } from "zustand";
-import * as Papa from "papaparse";
 
 type AnnouncementStore = {
   announcements: Announcement[];
   todayIndex: number;
 };
 
-type AnnouncementCSVEntry = {
+type AnnouncementConfigEntry = {
   title: string;
   content: string;
   unixtimestamp: number;
 };
 
-async function loadAnnouncementsFromCSV(): Promise<Announcement[]> {
+async function loadAnnouncementsFromJSON(): Promise<Announcement[]> {
   const base = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, ""); // no trailing slash
-  const url = `${base}/announcements.csv`;
+  const url = `${base}/announcements.json`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Failed to load announcements.csv: ${res.statusText}`);
+    throw new Error(`Failed to load announcements.json: ${res.statusText}`);
   }
-  const csv = await res.text();
-  const parsed = Papa.parse(csv, { header: true, delimiter: ";" });
-  if (parsed.errors.length > 0) {
-    throw new Error("Failed to parse CSV");
-  }
+  const data = (await res.json()) as AnnouncementConfigEntry[];
 
   let count = 0;
-  const announcements = (parsed.data as AnnouncementCSVEntry[]).map((entry) => ({
+  const announcements: Announcement[] = data.map((entry) => ({
     id: String(count++),
     title: entry.title,
     content: entry.content,
@@ -43,9 +38,9 @@ export const useAnnouncementStore = create<AnnouncementStore>((set) => {
     todayIndex: 0,
   };
 
-  // load announcements from CSV and sort by timestamp
-  loadAnnouncementsFromCSV().then((announcements) => {
-    announcements.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by timestamp, highest date first
+  // load announcements from config and sort by timestamp
+  loadAnnouncementsFromJSON().then((announcements) => {
+    announcements.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by timestamp, newest first
 
     // find the index of the last past event
     const now = new Date();

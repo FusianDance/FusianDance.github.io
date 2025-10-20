@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Website Launch",
+    "content": "We're excited to announce the launch of our new website!",
+    "unixtimestamp": 1760990400
+  },
+  {
+    "title": "Audition First Training",
+    "content": "The first Training Session to learn the Audition choreo.",
+    "unixtimestamp": 1762365600
+  },
+      {
+    "title": "Audition Second Training",
+    "content": "The second Training Session to learn the Audition choreo.",
+    "unixtimestamp": 1762711200
+  },
+      {
+    "title": "Audition Third Training",
+    "content": "The third Training Session to learn the Audition choreo.",
+    "unixtimestamp": 1762970400
+  },
+      {
+    "title": "Audition Final Day",
+    "content": "The final Training, where you show what you've learned!",
+    "unixtimestamp": 1763316000
+  }
+]

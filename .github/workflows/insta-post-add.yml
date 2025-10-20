@@ -14,28 +14,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Process HTML for CSV
-        id: process
+      
+      - name: Extract blockquote from input HTML
+        id: extract
         run: |
-          # Escape quotes by doubling them and wrap in quotes
-          html="${{ github.event.inputs.html }}"
-          # Replace all " with ""
-          escaped_html=$(echo "$html" | sed 's/"/\"\"/g')
-          # Wrap the whole thing in quotes
-          csv_html="\"$escaped_html\""
-          
-          # Save to output (handle multiline)
-          {
-            echo 'html<<EOF'
-            echo "$csv_html"
-            echo 'EOF'
-          } >> $GITHUB_OUTPUT
+          html='${{ github.event.inputs.html }}'
+          # Extract blockquote or use full HTML as fallback
+          extracted=$(echo "$html" | grep -oP '<blockquote.*?</blockquote>' || echo "$html")
+          echo "extracted=$extracted" >> $GITHUB_OUTPUT
 
-      - name: Add to CSV
+      - name: Add to JSON
         run: |
           cd fusian-web/public
-          printf "\n${{ steps.process.outputs.html }}" >> insta-posts.csv
+          node -e "
+            const fs = require('fs');
+            let data = [];
+            try { data = JSON.parse(fs.readFileSync('insta-posts.json', 'utf8')); } catch(e) {}
+            data.push({html: process.env.HTML_CONTENT });
+            fs.writeFileSync('insta-posts.json', JSON.stringify(data, null, 2));
+          "
+        env:
+          HTML_CONTENT: ${{ steps.extract.outputs.extracted }}
 
       - name: Generate timestamp for branch name
         id: branch-timestamp
