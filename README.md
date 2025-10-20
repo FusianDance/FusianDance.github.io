@@ -72,7 +72,7 @@ This project is configured to deploy automatically to GitHub Pages when changes 
 1. Go to your repository settings on GitHub
 2. Navigate to "Pages" in the left sidebar
 3. Under "Source", select "GitHub Actions"
-4. The site will be available at `https://YOUR_USERNAME.github.io/fusian/`
+4. The site will be available at `https://YOUR_USERNAME.github.io`
 
 ### Manual Deployment
 
