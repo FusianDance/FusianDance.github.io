@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { InstaPost } from "../models/insta-post";
-import * as Papa from "papaparse";
 
 type PostStore = {
   posts: InstaPost[];
