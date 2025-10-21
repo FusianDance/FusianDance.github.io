@@ -44,7 +44,7 @@ jobs:
           # only save if it has changed
           if [ "${{ vars.LAST_DEPLOY_ENV }}" != "$newConfig" ]; then
             echo "💾 Saving additional build environment variables for future deployments: $newConfig"
-            gh variable set LAST_DEPLOY_ENV --body "$newConfig" --env ${{github.environment}}
+            gh variable set LAST_DEPLOY_ENV --body "$newConfig" --env prod
           fi
           echo "build_env=$newConfig" >> $GITHUB_OUTPUT
         env:
