@@ -38,7 +38,7 @@ export default function AboutPage() {
               <h3 className="font-medium mb-2">Email</h3>
               <Link
                 href={`mailto:${contact.email}`}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-primary hover:text-foreground transition-colors"
               >
                 {contact.email}
               </Link>
@@ -50,7 +50,7 @@ export default function AboutPage() {
                 href={contact.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-primary hover:text-foreground transition-colors"
               >
                 @fusiandance
               </Link>
