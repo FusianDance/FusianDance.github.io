@@ -42,6 +42,8 @@ jobs:
           fi
 
           echo "build_env=$newConfig" >> $GITHUB_OUTPUT
+          echo "**Additional Build Environment Variables:**" >> $GITHUB_STEP_SUMMARY
+          echo "$newConfig" >> $GITHUB_STEP_SUMMARY
 
   build:
     needs: setup
@@ -105,4 +107,4 @@ jobs:
           body: |
             🚀 Deployed to GitHub Pages
 
-            Feature Flags: ${{ needs.setup.outputs.build_env || 'defaults' }}
+            Feature Flags: ${{ needs.setup.outputs.build_env }}
