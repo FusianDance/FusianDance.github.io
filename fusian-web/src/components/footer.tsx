@@ -1,7 +1,7 @@
 import { NavItem } from "@/lib/models/nav-item";
 import { contact } from "@/lib/state/contact";
 import Link from "next/link";
-import { GetNavItems } from "@/lib/models/nav-item";
+import { NavItems } from "@/lib/models/nav-item";
 
 export function Footer() {
   return (
@@ -22,7 +22,7 @@ export function Footer() {
         <div className="space-y-4">
           <h3 className="font-semibold text-sm">Quick Links</h3>
           <ul className="space-y-2 text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-            {GetNavItems().map((item: NavItem) => (
+            {NavItems.map((item: NavItem) => (
               <li key={item.appRoute}>
                 <Link
                   href={item.appRoute}

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { GetNavItems } from "@/lib/models/nav-item";
+import { NavItems } from "@/lib/models/nav-item";
 import { NavItem } from "@/lib/models/nav-item";
 
 export function Navbar() {
@@ -39,7 +39,7 @@ export function Navbar() {
           {/* Desktop Navigation Menu */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              {GetNavItems().map((item: NavItem) => (
+              {NavItems.map((item: NavItem) => (
                 <NavigationMenuItem key={item.appRoute}>
                   <NavigationMenuLink
                     asChild
@@ -72,7 +72,7 @@ export function Navbar() {
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="flex flex-col p-2 border-t">
-              {GetNavItems().map((item: NavItem) => (
+              {NavItems.map((item: NavItem) => (
                 <Link
                   key={item.appRoute}
                   href={item.appRoute}

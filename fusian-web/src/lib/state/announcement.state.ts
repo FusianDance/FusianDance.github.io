@@ -13,6 +13,11 @@ type AnnouncementConfigEntry = {
 };
 
 async function loadAnnouncementsFromJSON(): Promise<Announcement[]> {
+  // Skip loading on server side
+  if (typeof window === "undefined") {
+    return [];
+  }
+
   const base = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, ""); // no trailing slash
   const url = `${base}/announcements.json`;
   const res = await fetch(url);

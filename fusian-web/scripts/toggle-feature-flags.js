@@ -32,7 +32,7 @@ function writeIgnoredPaths(disabledFeatures) {
 }
 
 function writeEnabledFeatures(enabledFeatures) {
-  const outputPath = path.join(__dirname, "../src/config/nav-items.generated.json");
+  const outputPath = path.join(__dirname, "../src/config/nav-items.generated.ts");
 
   // Ensure the config directory exists
   const configDir = path.dirname(outputPath);
@@ -41,7 +41,7 @@ function writeEnabledFeatures(enabledFeatures) {
   }
 
   // Generate TypeScript file content
-  const content = JSON.stringify(
+  const navItems = JSON.stringify(
     enabledFeatures.map((feature) => {
       return {
         navTitle: feature.navTitle,
@@ -52,6 +52,10 @@ function writeEnabledFeatures(enabledFeatures) {
     2
   );
 
+  // This file is auto-generated. Do not edit manually.
+  const content = `// This file is auto-generated. Do not edit manually.
+export const additionalNavItems = ${navItems};
+`;
   fs.writeFileSync(outputPath, content, "utf8");
 }
 

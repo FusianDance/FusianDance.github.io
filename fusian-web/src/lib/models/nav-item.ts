@@ -22,14 +22,11 @@ const requiredNavItems: NavItem[] = [
   },
 ];
 
-let navItems: NavItem[] | undefined = undefined;
-
-export function GetNavItems(): NavItem[] {
-  if (navItems == undefined) {
-    // TODO initialize navItems from json file
-
-    navItems = requiredNavItems;
-  }
-
-  return navItems;
+export let NavItems: NavItem[]
+try {
+      const { additionalNavItems } = await import('../../config/nav-items.generated');
+      NavItems = [...requiredNavItems, ...additionalNavItems];
+} catch (error) {
+      console.error('Error loading additional nav items:', error);
+      NavItems = [...requiredNavItems];
 }
