@@ -23,9 +23,14 @@ permissions:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    environment:
+      name: prod
     outputs:
       build_env: ${{ steps.save-env.outputs.build_env }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Save build env config
         id: save-env
         run: |
@@ -39,7 +44,7 @@ jobs:
           # only save if it has changed
           if [ "${{ vars.LAST_DEPLOY_ENV }}" != "$newConfig" ]; then
             echo "💾 Saving additional build environment variables for future deployments: $newConfig"
-            gh variable set LAST_DEPLOY_ENV --body "$newConfig"
+            gh variable set LAST_DEPLOY_ENV --body "$newConfig" --env ${{github.environment}}
           fi
           echo "build_env=$newConfig" >> $GITHUB_OUTPUT
         env:
