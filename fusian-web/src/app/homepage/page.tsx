@@ -34,7 +34,12 @@ export default function Homepage() {
 
       {/* Instagram Section */}
       <section className="flex flex-row py-10 justify-center">
-        <Carousel className="w-full">
+        <Carousel
+          className="w-full"
+          opts={{
+            loop: true,
+          }}
+        >
           <CarouselContent className="flex m-3 items-center">
             {posts?.map((post) => (
               <div key={post.id}>

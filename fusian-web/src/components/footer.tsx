@@ -2,6 +2,7 @@ import { NavItem } from "@/lib/models/nav-item";
 import { contact } from "@/lib/state/contact";
 import Link from "next/link";
 import { NavItems } from "@/lib/models/nav-item";
+import { FusianIcon } from "@/components/fusian.icon";
 
 export function Footer() {
   return (
@@ -9,8 +10,8 @@ export function Footer() {
       <div className="w-full py-8 px-4 flex flex-row flex-wrap gap-8 md:justify-around">
         {/* Brand Section */}
         <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <div className="h-6 w-6 rounded-full bg-gradient-to-r from-primary to-primary/80"></div>
+          <div className="flex items-center space-x-1">
+              <FusianIcon className="fill-primary w-8 h-8"/>
             <span className="font-bold text-lg">Fusian</span>
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">

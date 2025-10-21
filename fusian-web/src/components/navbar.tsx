@@ -11,6 +11,7 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
+import { FusianIcon } from "@/components/fusian.icon";
 import { Menu, X } from "lucide-react";
 import { NavItems } from "@/lib/models/nav-item";
 import { NavItem } from "@/lib/models/nav-item";
@@ -30,8 +31,8 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-x-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-primary/80"></div>
+            <Link href="/" className="flex items-center gap-x-1">
+              <FusianIcon className="fill-primary w-8 h-8"/>
               <span className="hidden font-bold sm:inline-block text-xl">Fusian</span>
             </Link>
           </div>
@@ -44,7 +45,7 @@ export function Navbar() {
                   <NavigationMenuLink
                     asChild
                     className={cn(
-                      "group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                      "inline-flex px-4 py-2 text-sm font-medium",
                       pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground"
                     )}
                   >
