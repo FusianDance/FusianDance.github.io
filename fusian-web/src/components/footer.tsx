@@ -1,12 +1,7 @@
+import { NavItem } from "@/lib/models/nav-item";
 import { contact } from "@/lib/state/contact";
 import Link from "next/link";
-
-const navigationItems = [
-  { title: "Home", href: "/" },
-  { title: "About", href: "/about" },
-  { title: "Events", href: "/events" },
-  { title: "Gallery", href: "/gallery" },
-];
+import { NavItems } from "@/lib/models/nav-item";
 
 export function Footer() {
   return (
@@ -27,13 +22,13 @@ export function Footer() {
         <div className="space-y-4">
           <h3 className="font-semibold text-sm">Quick Links</h3>
           <ul className="space-y-2 text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-            {navigationItems.map((item) => (
-              <li key={item.href}>
+            {NavItems.map((item: NavItem) => (
+              <li key={item.appRoute}>
                 <Link
-                  href={item.href}
+                  href={item.appRoute}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {item.title}
+                  {item.navTitle}
                 </Link>
               </li>
             ))}

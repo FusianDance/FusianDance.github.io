@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      additional_build_env:
+        description: 'additional environment variables for build step'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build-and-lint:
@@ -43,7 +48,10 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Build application
-        run: npm run build
+        run: |
+          # Export additional environment variables if provided
+          export ${{ inputs.additional_build_env }}
+          npm run build
         env:
           NODE_ENV: production
 

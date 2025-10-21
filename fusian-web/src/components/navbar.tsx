@@ -12,13 +12,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-
-export const navigationItems = [
-  { title: "Home", href: "/" },
-  { title: "About", href: "/about" },
-  { title: "Events", href: "/events" },
-  { title: "Gallery", href: "/gallery" },
-];
+import { NavItems } from "@/lib/models/nav-item";
+import { NavItem } from "@/lib/models/nav-item";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -44,16 +39,16 @@ export function Navbar() {
           {/* Desktop Navigation Menu */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              {navigationItems.map((item) => (
-                <NavigationMenuItem key={item.href}>
+              {NavItems.map((item: NavItem) => (
+                <NavigationMenuItem key={item.appRoute}>
                   <NavigationMenuLink
                     asChild
                     className={cn(
                       "group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
-                      pathname === item.href ? "bg-accent text-accent-foreground" : "text-foreground"
+                      pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground"
                     )}
                   >
-                    <Link href={item.href}>{item.title}</Link>
+                    <Link href={item.appRoute}>{item.navTitle}</Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
@@ -77,19 +72,19 @@ export function Navbar() {
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="flex flex-col p-2 border-t">
-              {navigationItems.map((item) => (
+              {NavItems.map((item: NavItem) => (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.appRoute}
+                  href={item.appRoute}
                   className={cn(
                     "block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.href
+                    pathname === item.appRoute
                       ? "bg-accent text-accent-foreground"
                       : "text-foreground hover:bg-accent/50"
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {item.title}
+                  {item.navTitle}
                 </Link>
               ))}
             </div>
