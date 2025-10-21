@@ -100,7 +100,6 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "${{ needs.setup.outputs.build_env }}" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          else
           fi
 
       - name: Release
