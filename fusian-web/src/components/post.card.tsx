@@ -2,6 +2,8 @@ import { Card, CardContent } from "./ui/card";
 import { InstaPost } from "@/lib/models/insta-post";
 import { useEffect, useRef } from "react";
 
+import { cn } from "@/lib/utils";
+
 // Extend window type for Instagram embed
 declare global {
   interface Window {
@@ -13,14 +15,14 @@ declare global {
   }
 }
 
-export function PostCard({ post }: { post: InstaPost }) {
+export function PostCard({ post, className }: { post: InstaPost; className?: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Load Instagram embed script if it doesn't exist
     if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
-      const script = document.createElement('script');
-      script.src = '//www.instagram.com/embed.js';
+      const script = document.createElement("script");
+      script.src = "//www.instagram.com/embed.js";
       script.async = true;
       document.body.appendChild(script);
     } else {
@@ -32,16 +34,15 @@ export function PostCard({ post }: { post: InstaPost }) {
   }, [post.html]);
 
   return (
-    <Card 
-      ref={cardRef}
-      className="hover:shadow-md transition-shadow hover:scale-102 overflow-hidden"
-    >
-      <CardContent>
-        <div 
-          dangerouslySetInnerHTML={{ __html: post.html }}
-          className="instagram-embed-container"
-        />
-      </CardContent>
-    </Card>
+    <div className="flex justify-center">
+      <Card
+        ref={cardRef}
+        className={cn("hover:shadow-md transition-shadow hover:scale-102 overflow-hidden", className)}
+      >
+        <CardContent>
+          <div dangerouslySetInnerHTML={{ __html: post.html }} className="instagram-embed-container" />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
