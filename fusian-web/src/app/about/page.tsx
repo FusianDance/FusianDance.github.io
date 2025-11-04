@@ -1,4 +1,6 @@
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { contact } from "@/lib/state/contact";
+import { AlertCircleIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function AboutPage() {
@@ -31,7 +33,16 @@ export default function AboutPage() {
           <h2 className="text-2xl font-semibold mb-4 mt-8">Join Us</h2>
           <p>
             Whether you&apos;re a beginner taking your first steps or an experienced dancer looking for a new
-            creative home, Fusian welcomes you. Come dance with us!
+            creative home, Fusian welcomes you. Come dance with us and join our Audition! <br />
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle className="flex items-center gap-2">
+                <AlertCircleIcon /> 
+                <span className="text-lg">
+                  The next audition cycle will be announced at the start of next semester (Sommersemester 26).
+                </span>
+              </AlertTitle>
+            </Alert>
+            <span className="block mt-4 text-muted-foreground"></span>
           </p>
           <div className="flex flex-col mt-8">
             <div className="flex flex-wrap gap-4">
