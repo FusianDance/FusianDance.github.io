@@ -14,8 +14,8 @@ A modern Next.js website for Fusian Dance Crew built with TypeScript, Tailwind C
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/fusian.git
-cd fusian
+git clone https://github.com/FusianDance/FusianDance.github.io.git
+cd FusianDance.github.io
 ```
 
 2. Install dependencies:
@@ -50,7 +50,7 @@ npm run dev
 ## 📦 Project Structure
 
 ```
-fusian/
+FusianDance.github.io/
 ├── src/
 │   ├── app/                 # Next.js app router pages
 │   ├── components/          # Reusable UI components
