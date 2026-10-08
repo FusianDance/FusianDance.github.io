@@ -8,7 +8,6 @@ const featureFlags = [
     key: "audition",
     navTitle: "Audition",
     appRoute: "/audition",
-    dirPaths: ["src/app/audition/**/*"],
   },
 ];
 
@@ -22,13 +21,17 @@ function getFeatureFlags() {
     .map((key) => key.replace("FEATURE_", "").toLowerCase());
 }
 
-function writeIgnoredPaths(disabledFeatures) {
-  const ignoredPaths = disabledFeatures.flatMap((feature) => {
-    return feature.dirPaths;
-  });
-
-  const outputPath = path.join(__dirname, "../ignored-build-paths.json");
-  fs.writeFileSync(outputPath, JSON.stringify(ignoredPaths, null, 2), "utf8");
+/**
+ * Remove disabled feature routes from the static export (out/)
+ */
+function removeDisabledRoutes(disabledFeatures) {
+  const outDir = path.join(__dirname, "../out");
+  for (const feature of disabledFeatures) {
+    for (const dir of [feature.appRoute, `_next/static/chunks/app${feature.appRoute}`]) {
+      fs.rmSync(path.join(outDir, dir), { recursive: true, force: true });
+    }
+    console.log(`🚫 Removed disabled route from build: ${feature.appRoute}`);
+  }
 }
 
 function writeEnabledFeatures(enabledFeatures) {
@@ -63,13 +66,21 @@ function toggleFeatureFlags() {
   const envFlags = getFeatureFlags();
 
   writeEnabledFeatures(featureFlags.filter((feature) => envFlags.includes(feature.key)));
-
-  writeIgnoredPaths(featureFlags.filter((feature) => !envFlags.includes(feature.key)));
 }
 
-// Run if executed directly
+function removeDisabledFeatures() {
+  const envFlags = getFeatureFlags();
+
+  removeDisabledRoutes(featureFlags.filter((feature) => !envFlags.includes(feature.key)));
+}
+
+// Run if executed directly: prebuild generates nav items, `--postbuild` strips disabled routes from out/
 if (require.main === module) {
-  toggleFeatureFlags();
+  if (process.argv.includes("--postbuild")) {
+    removeDisabledFeatures();
+  } else {
+    toggleFeatureFlags();
+  }
 }
 
-module.exports = { toggleFeatureFlags };
+module.exports = { toggleFeatureFlags, removeDisabledFeatures };

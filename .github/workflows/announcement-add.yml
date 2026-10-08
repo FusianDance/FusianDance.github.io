@@ -35,10 +35,10 @@ jobs:
 
       - name: Add to JSON
         run: |
-          cd fusian-web/public
+          cd public
           timestamp=${{ steps.timestamp.outputs.timestamp }}
           # Use node to safely read/modify/write JSON. Pass values as argv to avoid shell-escaping issues.
-          node -e "const fs=require('fs');const p='announcements.json';let data=[];try{data=JSON.parse(fs.readFileSync(p,'utf8'))}catch(e){}const title=process.argv[1]||'';const content=process.argv[2]||'';const unixtimestamp=Number(process.argv[3]) * 1000;const entry={id:String(data.length),title,content,unixtimestamp};data.push(entry);fs.writeFileSync(p,JSON.stringify(data,null,2),'utf8');" -- "${{ github.event.inputs.title }}" "${{ github.event.inputs.content }}" "$timestamp"
+          node -e "const fs=require('fs');const p='announcements.json';let data=[];try{data=JSON.parse(fs.readFileSync(p,'utf8'))}catch(e){}const title=process.argv[1]||'';const content=process.argv[2]||'';const unixtimestamp=Number(process.argv[3]);const entry={id:String(data.length),title,content,unixtimestamp};data.push(entry);fs.writeFileSync(p,JSON.stringify(data,null,2),'utf8');" -- "${{ github.event.inputs.title }}" "${{ github.event.inputs.content }}" "$timestamp"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5

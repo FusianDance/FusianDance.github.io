@@ -25,7 +25,7 @@ jobs:
 
       - name: Add to JSON
         run: |
-          cd fusian-web/public
+          cd public
           node -e "
             const fs = require('fs');
             let data = [];
