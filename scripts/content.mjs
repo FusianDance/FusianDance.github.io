@@ -2,7 +2,7 @@
 //   node scripts/content.mjs sync                                   (env SHEET_CSV_URL, see sheet-sync.yml)
 //   node scripts/content.mjs add-announcement <title> <content> [date]
 //   node scripts/content.mjs add-post <url>
-// Self-check: node --test scripts/
+// Self-check: node --test "scripts/*.test.mjs"
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import Papa from "papaparse";

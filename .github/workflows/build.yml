@@ -47,7 +47,7 @@ jobs:
         run: npm ci
 
       - name: Run content script tests
-        run: node --test scripts/
+        run: node --test "scripts/*.test.mjs"
 
       - name: Run ESLint
         run: npm run lint

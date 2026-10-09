@@ -12,7 +12,7 @@ npm run build          # runs prebuild (feature flags) then static export to out
 npm run lint           # next lint
 npx tsc --noEmit       # typecheck (CI runs this)
 FEATURE_AUDITION=true npm run build   # build with a feature flag enabled
-node --test scripts/   # self-check for scripts/content.mjs
+node --test "scripts/*.test.mjs"   # self-check for scripts/content.mjs
 ```
 
 The only tests are `scripts/*.test.mjs`. CI (`.github/workflows/build.yml`) runs them, lint, typecheck, and build on PRs.
