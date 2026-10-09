@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Website for Fusian Dance Crew, deployed to GitHub Pages at https://fusiandance.github.io. React Router 8 (framework mode) on Vite 8, React 19, TypeScript 6, Tailwind CSS v4, shadcn/ui (new-york style, radix, lucide icons), ESLint + Prettier.
+Website for Fusian Dance Crew, deployed to GitHub Pages at https://fusiandance.github.io. React Router 8 (framework mode) on Vite 8, React 19, TypeScript 6, Tailwind CSS v4, shadcn/ui (base-vega style on Base UI, lucide icons), ESLint + Prettier.
 
 ## Commands
 
