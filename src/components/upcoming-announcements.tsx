@@ -1,10 +1,14 @@
-"use client";
-
 import { AnnouncementCard } from "@/components/announcement.card";
-import { Announcement } from "@/lib/models/announcement";
+import type { Announcement } from "@/lib/models/announcement";
 import { todayIndex, useNow } from "@/lib/hooks/use-now";
 
-export function UpcomingAnnouncements({ announcements, buildTime }: { announcements: Announcement[]; buildTime: number }) {
+export function UpcomingAnnouncements({
+  announcements,
+  buildTime,
+}: {
+  announcements: Announcement[];
+  buildTime: number;
+}) {
   const now = useNow(buildTime);
   const today = todayIndex(announcements, now);
 

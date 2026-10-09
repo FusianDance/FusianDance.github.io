@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
-import { Announcement } from "@/lib/models/announcement";
+import { useSyncExternalStore } from "react";
+import type { Announcement } from "@/lib/models/announcement";
 
 // Pages are prerendered at build time. Render with the build time first (matches the static HTML), then switch to the real time after mount.
+const pageLoadTime = Date.now();
+const noSubscribe = () => () => {};
+
 export function useNow(buildTime: number) {
-  const [now, setNow] = useState(buildTime);
-  useEffect(() => setNow(Date.now()), []);
-  return now;
+  return useSyncExternalStore(
+    noSubscribe,
+    () => pageLoadTime,
+    () => buildTime,
+  );
 }
 
 // announcements are newest first: index of the first one that is not in the future.

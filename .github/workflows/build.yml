@@ -4,26 +4,21 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '**'
-      - '!**.md'
-      - '!.github/**'
-      - '.github/workflows/build.yml'
+      - "**"
+      - "!**.md"
+      - "!.github/**"
+      - ".github/workflows/build.yml"
   workflow_call:
     inputs:
-      static_export:
-        description: 'Build for static export (GitHub Pages)'
-        required: false
-        default: false
-        type: boolean
       additional_build_env:
-        description: 'additional environment variables for build step'
+        description: "additional environment variables for build step"
         required: false
-        default: ''
+        default: ""
         type: string
       ref:
-        description: 'Git ref to build (default: triggering commit)'
+        description: "Git ref to build (default: triggering commit)"
         required: false
-        default: ''
+        default: ""
         type: string
 
 jobs:
@@ -39,8 +34,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
@@ -52,8 +47,11 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Run TypeScript check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Build application
         run: |
@@ -63,18 +61,9 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Upload build artifacts (standard build)
-        if: ${{ !inputs.static_export }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: .next/
-          retention-days: 1
-
-      - name: Upload build artifacts (static export)
-        if: ${{ inputs.static_export }}
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: static-export
-          path: out/
+          path: build/client/
           retention-days: 1

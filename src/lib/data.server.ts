@@ -3,9 +3,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
-import { Announcement } from "./models/announcement";
-import { Contact } from "./models/contact";
-import { InstaPost } from "./models/insta-post";
+import type { Announcement } from "./models/announcement";
+import type { Contact } from "./models/contact";
+import type { InstaPost } from "./models/insta-post";
 
 function load<T>(name: string): T {
   return parse(readFileSync(join(process.cwd(), "data", `${name}.yml`), "utf8")) ?? [];

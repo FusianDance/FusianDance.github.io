@@ -1,8 +1,5 @@
-"use client";
-
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -13,17 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { FusianIcon } from "@/components/fusian.icon";
 import { Menu, X } from "lucide-react";
-import { NavItems } from "@/lib/models/nav-item";
-import { NavItem } from "@/lib/models/nav-item";
+import { NavItems, type NavItem } from "@/lib/models/nav-item";
 
 export function Navbar() {
-  const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-
-  // Close mobile menu when pathname changes
-  React.useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  const pathname = useLocation().pathname.replace(/(.)\/$/, "$1");
+  // The mobile menu remembers the page it was opened on, so it closes on navigation.
+  const [menuOpenedAt, setMenuOpenedAt] = React.useState<string | null>(null);
+  const isMobileMenuOpen = menuOpenedAt === pathname;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,9 +24,9 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-x-1">
-              <FusianIcon className="fill-primary w-8 h-8"/>
-              <span className="hidden font-bold sm:inline-block text-xl">Fusian</span>
+            <Link to="/" className="flex items-center gap-x-1">
+              <FusianIcon className="h-8 w-8 fill-primary" />
+              <span className="hidden text-xl font-bold sm:inline-block">Fusian</span>
             </Link>
           </div>
 
@@ -43,13 +36,13 @@ export function Navbar() {
               {NavItems.map((item: NavItem) => (
                 <NavigationMenuItem key={item.appRoute}>
                   <NavigationMenuLink
-                    asChild
+                    render={<Link to={item.appRoute} />}
                     className={cn(
                       "inline-flex px-4 py-2 text-sm font-medium",
-                      pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground"
+                      pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground",
                     )}
                   >
-                    <Link href={item.appRoute}>{item.navTitle}</Link>
+                    {item.navTitle}
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
@@ -61,7 +54,7 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setMenuOpenedAt(isMobileMenuOpen ? null : pathname)}
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? <X /> : <Menu />}
@@ -72,18 +65,18 @@ export function Navbar() {
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden">
-            <div className="flex flex-col p-2 border-t">
+            <div className="flex flex-col border-t p-2">
               {NavItems.map((item: NavItem) => (
                 <Link
                   key={item.appRoute}
-                  href={item.appRoute}
+                  to={item.appRoute}
                   className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
                     pathname === item.appRoute
                       ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-accent/50"
+                      : "text-foreground hover:bg-accent/50",
                   )}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => setMenuOpenedAt(null)}
                 >
                   {item.navTitle}
                 </Link>

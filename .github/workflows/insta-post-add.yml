@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'Instagram post URL, e.g. https://www.instagram.com/p/ABC123/'
+        description: "Instagram post URL, e.g. https://www.instagram.com/p/ABC123/"
         required: true
         type: string
 
@@ -18,8 +18,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
@@ -39,11 +39,11 @@ jobs:
           title: "Add Instagram post"
           body: |
             ## New Instagram Post Added
-            
+
             This PR adds a new Instagram post to the gallery.
-            
+
             **URL:** ${{ github.event.inputs.url }}
-            
+
             This PR was automatically created by the Add Instagram Post workflow.
           branch: "add-insta-post-${{ github.run_id }}"
           delete-branch: true

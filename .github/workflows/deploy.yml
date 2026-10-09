@@ -18,9 +18,9 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: 'Git ref to build (default: triggering commit)'
+        description: "Git ref to build (default: triggering commit)"
         required: false
-        default: ''
+        default: ""
         type: string
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -60,7 +60,6 @@ jobs:
     needs: setup
     uses: ./.github/workflows/build.yml
     with:
-      static_export: true
       ref: ${{ inputs.ref }}
       additional_build_env: ${{ needs.setup.outputs.build_env }}
 
