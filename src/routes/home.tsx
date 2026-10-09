@@ -1,36 +1,36 @@
 import { PostCard } from "@/components/post.card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { UpcomingAnnouncements } from "@/components/upcoming-announcements";
-import { announcements, posts } from "@/lib/data";
+import type { Route } from "./+types/home";
+import { announcements, posts } from "@/lib/data.server";
 
-export default function Homepage() {
+export function loader() {
+  return { announcements, posts, buildTime: Date.now() };
+}
+
+export default function Home({ loaderData }: Route.ComponentProps) {
+  const { announcements, posts, buildTime } = loaderData;
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
       <section className="my-10 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-6">
+        <h1 className="mb-6 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-4xl font-bold text-transparent md:text-6xl">
           Fusian Dance Crew
         </h1>
-        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+        <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
           Where passion meets rhythm. Join our dance crew and express yourself through the art of movement.
         </p>
       </section>
 
       {/* Instagram Section */}
-      <section className="flex flex-row py-10 justify-center">
+      <section className="flex flex-row justify-center py-10">
         <Carousel
           className="w-full"
           opts={{
             loop: true,
           }}
         >
-          <CarouselContent className="flex m-3 items-center">
+          <CarouselContent className="m-3 flex items-center">
             {posts?.map((post) => (
               <div key={post.id}>
                 <CarouselItem>
@@ -47,7 +47,7 @@ export default function Homepage() {
       {/* Announcement Section */}
       <section className="my-10">
         <div className="flex flex-col gap-y-2">
-          <UpcomingAnnouncements announcements={announcements} buildTime={Date.now()} />
+          <UpcomingAnnouncements announcements={announcements} buildTime={buildTime} />
         </div>
       </section>
     </div>

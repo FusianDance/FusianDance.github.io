@@ -34,10 +34,25 @@ Line 2",2025-11-05 19:00,
 test("sheetEntries parses, validates and tags rows", () => {
   const { announcements, posts } = sheetEntries(csv);
   assert.deepEqual(announcements, [
-    { title: "Show", content: "Line 1, with comma\nLine 2", date: "2025-11-05T19:00:00+01:00", source: "sheet", sourceId: "2025-10-01 12:00:00" },
-    { title: "No date", content: "Uses timestamp", date: "2025-10-02T12:00:00+02:00", source: "sheet", sourceId: "2025-10-02 12:00:00" },
+    {
+      title: "Show",
+      content: "Line 1, with comma\nLine 2",
+      date: "2025-11-05T19:00:00+01:00",
+      source: "sheet",
+      sourceId: "2025-10-01 12:00:00",
+    },
+    {
+      title: "No date",
+      content: "Uses timestamp",
+      date: "2025-10-02T12:00:00+02:00",
+      source: "sheet",
+      sourceId: "2025-10-02 12:00:00",
+    },
   ]);
-  assert.deepEqual(posts.map((p) => p.url), ["https://www.instagram.com/p/AAA/", "https://www.instagram.com/reel/BBB/"]);
+  assert.deepEqual(
+    posts.map((p) => p.url),
+    ["https://www.instagram.com/p/AAA/", "https://www.instagram.com/reel/BBB/"],
+  );
   assert.throws(() => sheetEntries("<html>Sign in</html>"), /missing column/);
 });
 
@@ -55,12 +70,19 @@ test("mergeSheet replaces sheet entries and keeps manual ones and comments", () 
   const { announcements, posts } = sheetEntries(csv);
   const merged = mergeSheet(file, announcements);
   assert.match(merged, /^# header comment/);
-  assert.deepEqual(parse(merged).map((a) => a.title), ["Manual", "Show", "No date"]);
+  assert.deepEqual(
+    parse(merged).map((a) => a.title),
+    ["Manual", "Show", "No date"],
+  );
   assert.equal(mergeSheet(merged, announcements), merged, "re-running with the same sheet changes nothing");
 
   const postFile = "- url: https://www.instagram.com/p/MANUAL/\n";
   const mergedPosts = parse(mergeSheet(postFile, posts, { prepend: true })).map((p) => p.url);
-  assert.deepEqual(mergedPosts, ["https://www.instagram.com/reel/BBB/", "https://www.instagram.com/p/AAA/", "https://www.instagram.com/p/MANUAL/"]);
+  assert.deepEqual(mergedPosts, [
+    "https://www.instagram.com/reel/BBB/",
+    "https://www.instagram.com/p/AAA/",
+    "https://www.instagram.com/p/MANUAL/",
+  ]);
 });
 
 test("real data files round-trip unchanged and addEntry appends", () => {

@@ -1,7 +1,5 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import { Announcement } from "@/lib/models/announcement";
+import type { Announcement } from "@/lib/models/announcement";
 import { todayIndex, useNow } from "@/lib/hooks/use-now";
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Calendar } from "lucide-react";
@@ -39,15 +37,15 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Events & Announcements</h1>
+    <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-8 text-4xl font-bold">Events & Announcements</h1>
 
         {/* View More Future Events Button */}
         {futureEvents.length > futureEventsCount && (
           <div className="mb-6 flex justify-center">
             <Button variant="outline" onClick={handleShowMoreFuture} className="flex items-center gap-2">
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="h-4 w-4" />
               {`View ${Math.min(3, futureEvents.length - futureEventsCount)} More Future Events`}
             </Button>
           </div>
@@ -57,7 +55,7 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
         {futureEventsCount > shownEvents && !(futureEvents.length > futureEventsCount) && (
           <div className="mb-6 flex justify-center">
             <Button variant="outline" onClick={handleShowLessFuture} className="flex items-center gap-2">
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="h-4 w-4" />
               Show Less Future Events
             </Button>
           </div>
@@ -65,7 +63,7 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
 
         {/* Future Events */}
         {futureEventsToShow.length > 0 && (
-          <div className="space-y-4 mb-8">
+          <div className="mb-8 space-y-4">
             {futureEventsToShow.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} upcoming />
             ))}
@@ -73,10 +71,10 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
         )}
 
         {/* Today Divider */}
-        <div className="flex items-center my-8">
-          <div className="flex-1 h-px bg-primary"></div>
+        <div className="my-8 flex items-center">
+          <div className="h-px flex-1 bg-primary"></div>
           <div className="flex items-center gap-2 px-4">
-            <Calendar className="w-4 h-4 text-primary" />
+            <Calendar className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">
               Today -{" "}
               {new Date(now).toLocaleDateString("en-US", {
@@ -87,12 +85,12 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
               })}
             </span>
           </div>
-          <div className="flex-1 h-px bg-primary"></div>
+          <div className="h-px flex-1 bg-primary"></div>
         </div>
 
         {/* Past Events */}
         {pastEventsToShow.length > 0 && (
-          <div className="space-y-4 mb-8">
+          <div className="mb-8 space-y-4">
             {pastEventsToShow.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} upcoming={false} />
             ))}
@@ -101,9 +99,9 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
 
         {/* View More Past Events Button */}
         {pastEvents.length > pastEventsCount && (
-          <div className="flex justify-center mb-6">
+          <div className="mb-6 flex justify-center">
             <Button variant="outline" onClick={handleShowMorePast} className="flex items-center gap-2">
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="h-4 w-4" />
               {`View ${Math.min(3, pastEvents.length - pastEventsCount)} More Past Events`}
             </Button>
           </div>
@@ -113,7 +111,7 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
         {pastEventsCount > shownEvents && !(pastEvents.length > pastEventsCount) && (
           <div className="flex justify-center">
             <Button variant="outline" onClick={handleShowLessPast} className="flex items-center gap-2">
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="h-4 w-4" />
               Show Less Past Events
             </Button>
           </div>
@@ -121,9 +119,9 @@ export function EventsTimeline({ announcements, buildTime }: { announcements: An
 
         {/* Empty State */}
         {pastEvents.length === 0 && futureEvents.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No events found</h3>
+          <div className="py-12 text-center">
+            <Calendar className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-medium">No events found</h3>
             <p className="text-muted-foreground">Check back soon for upcoming events and announcements.</p>
           </div>
         )}

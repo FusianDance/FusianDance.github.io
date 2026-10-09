@@ -5,10 +5,7 @@ import { cn } from "@/lib/utils";
 function FusianIcon({ className }: React.ComponentProps<"div">) {
   return (
     <svg
-      className={cn(
-        "w-full h-full",
-        className
-      )}
+      className={cn("h-full w-full", className)}
       viewBox="840 620 400 540"
       role="img"
       xmlns="http://www.w3.org/2000/svg"

@@ -2,46 +2,52 @@
 
 **[https://fusiandance.github.io](https://fusiandance.github.io)**
 
-A modern Next.js website for Fusian Dance Crew built with TypeScript, Tailwind CSS, and shadcn/ui components.
+A modern React Router website for Fusian Dance Crew built with TypeScript, Tailwind CSS, and shadcn/ui components.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18 or higher
+
+- Node.js 26 (CI uses 26; 22.22+ works)
 - npm
 
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/FusianDance/FusianDance.github.io.git
 cd FusianDance.github.io
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Run the development server:
+
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🛠️ Available Scripts
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build the application for production
-- `npm run start` - Start the production server
+- `npm run dev` - Start development server
+- `npm run build` - Build the static site into `build/client/`
+- `npm run typecheck` - Generate route types and run the TypeScript check
 - `npm run lint` - Run ESLint to check code quality
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check formatting (CI runs this)
 
 ## 🏗️ Tech Stack
 
-- **Framework**: Next.js 15
+- **Framework**: React Router 8 (framework mode, static prerender) on Vite
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS 4
 - **UI Components**: shadcn/ui
 - **Icons**: Lucide React
 - **Theme**: next-themes
@@ -51,14 +57,16 @@ npm run dev
 ```
 FusianDance.github.io/
 ├── src/
-│   ├── app/                 # Next.js app router pages
+│   ├── routes/              # Pages (each with a build-time loader)
+│   ├── routes.ts            # Route config (feature-flagged routes live here)
+│   ├── root.tsx             # HTML shell, navbar, footer
 │   ├── components/          # Reusable UI components
 │   │   └── ui/             # shadcn/ui components
 │   └── lib/                # Utilities and configurations
 │       ├── models/         # TypeScript type definitions
 │       └── utils.ts        # Utility functions
 ├── data/                   # Site content as YAML, read at build time
-├── scripts/                # Feature flags + content.mjs (content updates)
+├── scripts/                # content.mjs (content updates)
 ├── public/                 # Static assets
 └── .github/workflows/      # GitHub Actions workflows
 ```
@@ -67,11 +75,11 @@ FusianDance.github.io/
 
 Site content lives in `data/` as YAML and is read at build time. Edit it with a pull request. Merging to `main` deploys the site.
 
-| File | What it holds |
-|---|---|
-| `data/announcements.yml` | `title`, `content`, `date`. The date is ISO 8601 with offset, e.g. `2025-10-20T22:00:00+02:00` |
-| `data/insta-posts.yml` | `url` only, newest first. Use the canonical form `https://www.instagram.com/p/<id>/` or `https://www.instagram.com/reel/<id>/` |
-| `data/contact.yml` | Contact info and training hours |
+| File                     | What it holds                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `data/announcements.yml` | `title`, `content`, `date`. The date is ISO 8601 with offset, e.g. `2025-10-20T22:00:00+02:00`                                 |
+| `data/insta-posts.yml`   | `url` only, newest first. Use the canonical form `https://www.instagram.com/p/<id>/` or `https://www.instagram.com/reel/<id>/` |
+| `data/contact.yml`       | Contact info and training hours                                                                                                |
 
 ### Without editing files
 
@@ -99,11 +107,11 @@ Settings → Responses → **Collect email addresses: Verified**. People must si
 
 Use sections that branch on the first answer:
 
-| Section | Questions |
-|---|---|
-| 1 | **Type** (multiple choice, required): `Announcement` / `Instagram post`. In the ⋮ menu → *Go to section based on answer*: Announcement → section 2, Instagram post → section 3 |
-| 2 – Announcement | **Title** (short answer, required), **Content** (paragraph, required), **Date** (date with time, optional; empty = submission time). After section → *Submit form* |
-| 3 – Instagram post | **Post URL** (short answer, required, validate with the regex `^https://www\.instagram\.com/(p\|reel)/[A-Za-z0-9_-]+/?`). After section → *Submit form* |
+| Section            | Questions                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1                  | **Type** (multiple choice, required): `Announcement` / `Instagram post`. In the ⋮ menu → _Go to section based on answer_: Announcement → section 2, Instagram post → section 3 |
+| 2 – Announcement   | **Title** (short answer, required), **Content** (paragraph, required), **Date** (date with time, optional; empty = submission time). After section → _Submit form_             |
+| 3 – Instagram post | **Post URL** (short answer, required, validate with the regex `^https://www\.instagram\.com/(p\|reel)/[A-Za-z0-9_-]+/?`). After section → _Submit form_                        |
 
 Share the form link only in the club chat. Only maintainers get edit access to the form and the sheet.
 
@@ -172,36 +180,46 @@ To deploy manually:
 npm run build
 ```
 
-The static files will be generated in the `out` directory.
+The static files will be generated in the `build/client` directory.
+
+Feature flags are `FEATURE_<KEY>=true` environment variables read at build time (and in dev), e.g. `FEATURE_AUDITION=true npm run build`. A flagged route is defined conditionally in `src/routes.ts` with a matching entry in `src/lib/models/nav-item.ts`; disabled pages are not built at all.
 
 ## 🔄 CI/CD Workflows
 
 The project uses GitHub Actions for automated building, testing, and deployment with two main workflows:
 
 ### Build Workflow (`build.yml`)
+
 **Reusable workflow** that runs for both PR checks and deployments:
+
 - Installs dependencies and caches npm packages
 - Runs ESLint for code quality
 - Performs TypeScript type checking
-- Builds the application (standard or static export)
+- Checks formatting with Prettier
+- Builds the static site
 - Uploads build artifacts for sharing between jobs
 
 **Triggers:**
-- Pull requests to `main` branch (with standard build)
-- Called by deploy workflow (with static export for GitHub Pages)
+
+- Pull requests to `main` branch
+- Called by deploy workflow
 
 ### Deploy Workflow (`deploy.yml`)
+
 **Production deployment** workflow:
-- Uses the build workflow as a reusable action with static export enabled
+
+- Uses the build workflow as a reusable action
 - Downloads build artifacts from the build job
 - Configures GitHub Pages
 - Deploys the static site to GitHub Pages
 
 **Triggers:**
+
 - Pushes to `main` branch
 - Manual workflow dispatch
 
 ### Benefits of This Setup
+
 - **No Code Duplication**: Build logic is centralized in one reusable workflow
 - **Efficient Artifact Sharing**: Build artifacts are shared between jobs
 - **Consistent Builds**: Same build process for PRs and production
@@ -220,14 +238,8 @@ The project uses GitHub Actions for automated building, testing, and deployment 
 ## 📝 Content Management
 
 ### Adding Navigation Items
-Edit `src/components/navbar.tsx` to add new navigation items:
 
-```typescript
-export const navigationItems = [
-  { title: "New Page", href: "/new-page" },
-  // ... existing items
-];
-```
+Add the route in `src/routes.ts` and a nav entry in `src/lib/models/nav-item.ts`.
 
 ## 🤝 Contributing
 

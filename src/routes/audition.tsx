@@ -6,18 +6,18 @@ export default function AuditionPage() {
   const formUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/viewform`;
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Audition Application</h1>
-        <p className="text-muted-foreground mb-8">
-          Fill out the form below to apply for our upcoming auditions. We&apos;re excited to see what you
-          bring to the stage!
+    <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-8 text-4xl font-bold">Audition Application</h1>
+        <p className="mb-8 text-muted-foreground">
+          Fill out the form below to apply for our upcoming auditions. We&apos;re excited to see what you bring to the
+          stage!
         </p>
 
         {/* Google Form Embed */}
         <Card className="w-full">
           <CardContent>
-            <div className="relative w-full h-[90vh]">
+            <div className="relative h-[90vh] w-full">
               <iframe
                 src={formUrl + "?embedded=true"}
                 width="100%"
@@ -32,7 +32,7 @@ export default function AuditionPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-8 p-4 bg-secondary rounded-lg">
+        <div className="mt-8 rounded-lg bg-secondary p-4">
           <p className="text-sm text-muted-foreground">
             Having trouble with the form?
             <a

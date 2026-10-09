@@ -1,7 +1,5 @@
-"use client";
-
 import { Card, CardContent } from "./ui/card";
-import { InstaPost } from "@/lib/models/insta-post";
+import type { InstaPost } from "@/lib/models/insta-post";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
@@ -42,7 +40,7 @@ export function PostCard({ post, className }: { post: InstaPost; className?: str
     <div className="flex justify-center">
       <Card
         ref={cardRef}
-        className={cn("hover:shadow-md transition-shadow hover:scale-102 overflow-hidden", className)}
+        className={cn("overflow-hidden transition-shadow hover:scale-102 hover:shadow-md", className)}
       >
         <CardContent>
           {/* embed.js replaces the blockquote with an iframe, so React must not own that node */}

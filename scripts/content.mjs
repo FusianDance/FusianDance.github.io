@@ -29,7 +29,9 @@ export function berlinIso(text) {
 
 /** Canonical https://www.instagram.com/(p|reel)/<id>/ or null. Never pass user text into embed HTML. */
 export function postUrl(text) {
-  const m = String(text ?? "").trim().match(/^https:\/\/www\.instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)(\/|\?|$)/);
+  const m = String(text ?? "")
+    .trim()
+    .match(/^https:\/\/www\.instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)(\/|\?|$)/);
   return m ? `https://www.instagram.com/${m[1]}/${m[2]}/` : null;
 }
 
@@ -48,7 +50,8 @@ export function sheetEntries(csv) {
     const { timestamp: sourceId, type, title, content } = row;
     if (type === "Announcement") {
       const date = berlinIso(row.date || row.timestamp);
-      if (!title || !content || !date) console.warn(`skipping announcement row ${sourceId}: missing title/content or bad date`);
+      if (!title || !content || !date)
+        console.warn(`skipping announcement row ${sourceId}: missing title/content or bad date`);
       else announcements.push({ title, content, date, source: "sheet", sourceId });
     } else if (type === "Instagram post") {
       const url = postUrl(row.post_url);

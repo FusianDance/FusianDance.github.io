@@ -1,1 +1,1 @@
-Using react with tailwind and shadcn/ui.
+Using React Router (framework mode, Vite) with tailwind and shadcn/ui.
