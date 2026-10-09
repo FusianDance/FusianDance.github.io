@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent } from "./ui/card";
 import { InstaPost } from "@/lib/models/insta-post";
 import { useEffect, useRef } from "react";
@@ -31,7 +33,10 @@ export function PostCard({ post, className }: { post: InstaPost; className?: str
         window.instgrm.Embeds.process();
       }
     }
-  }, [post.html]);
+  }, [post.url]);
+
+  // post.url is validated in lib/data.ts, so interpolating it into HTML is safe.
+  const html = `<blockquote class="instagram-media" data-instgrm-permalink="${post.url}" data-instgrm-version="14" style=" background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"><a href="${post.url}" target="_blank" rel="noopener noreferrer">View this post on Instagram</a></blockquote>`;
 
   return (
     <div className="flex justify-center">
@@ -40,7 +45,8 @@ export function PostCard({ post, className }: { post: InstaPost; className?: str
         className={cn("hover:shadow-md transition-shadow hover:scale-102 overflow-hidden", className)}
       >
         <CardContent>
-          <div dangerouslySetInnerHTML={{ __html: post.html }} className="instagram-embed-container" />
+          {/* embed.js replaces the blockquote with an iframe, so React must not own that node */}
+          <div dangerouslySetInnerHTML={{ __html: html }} className="instagram-embed-container" />
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,5 @@
 import { NavItem } from "@/lib/models/nav-item";
-import { contact } from "@/lib/state/contact";
+import { contact } from "@/lib/data";
 import Link from "next/link";
 import { NavItems } from "@/lib/models/nav-item";
 import { FusianIcon } from "@/components/fusian.icon";

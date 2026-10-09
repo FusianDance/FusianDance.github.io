@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { contact } from "@/lib/state/contact";
+import { contact } from "@/lib/data";
 import { AlertCircleIcon } from "lucide-react";
 import Link from "next/link";
 

@@ -1,6 +1,3 @@
-"use client";
-
-import { AnnouncementCard } from "@/components/announcement.card";
 import { PostCard } from "@/components/post.card";
 import {
   Carousel,
@@ -9,17 +6,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { useAnnouncementStore } from "@/lib/state/announcement.state";
-import { usePostStore } from "@/lib/state/insta-post.state";
+import { UpcomingAnnouncements } from "@/components/upcoming-announcements";
+import { announcements, posts } from "@/lib/data";
 
 export default function Homepage() {
-  const { posts } = usePostStore();
-  const { announcements, todayIndex } = useAnnouncementStore();
-
-  // Show only the first 3 announcements
-  const startIndex = Math.max(0, todayIndex - 3);
-  const displayedAnnouncements = announcements.slice(startIndex, todayIndex).reverse();
-
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
@@ -57,7 +47,7 @@ export default function Homepage() {
       {/* Announcement Section */}
       <section className="my-10">
         <div className="flex flex-col gap-y-2">
-          {displayedAnnouncements.map((announcement) => AnnouncementCard({ announcement: announcement }))}
+          <UpcomingAnnouncements announcements={announcements} buildTime={Date.now()} />
         </div>
       </section>
     </div>

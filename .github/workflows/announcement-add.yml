@@ -11,8 +11,8 @@ on:
         description: "Announcement Content"
         required: true
         type: string
-      unixtimestamp:
-        description: "Unix Timestamp (leave empty for current time)"
+      date:
+        description: 'Date "YYYY-MM-DD HH:MM" Munich time (leave empty for now)'
         required: false
         type: string
 
@@ -23,25 +23,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set timestamp
-        id: timestamp
-        run: |
-          if [ -z "${{ github.event.inputs.unixtimestamp }}" ]; then
-            # if no timestamp is provided, use current time
-            echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
-          else
-            echo "timestamp=${{ github.event.inputs.unixtimestamp }}" >> $GITHUB_OUTPUT
-          fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Add to JSON
-        run: |
-          cd public
-          timestamp=${{ steps.timestamp.outputs.timestamp }}
-          # Use node to safely read/modify/write JSON. Pass values as argv to avoid shell-escaping issues.
-          node -e "const fs=require('fs');const p='announcements.json';let data=[];try{data=JSON.parse(fs.readFileSync(p,'utf8'))}catch(e){}const title=process.argv[1]||'';const content=process.argv[2]||'';const unixtimestamp=Number(process.argv[3]);const entry={id:String(data.length),title,content,unixtimestamp};data.push(entry);fs.writeFileSync(p,JSON.stringify(data,null,2),'utf8');" -- "${{ github.event.inputs.title }}" "${{ github.event.inputs.content }}" "$timestamp"
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add announcement
+        # inputs go through env, never interpolated into the script (shell injection)
+        run: node scripts/content.mjs add-announcement "$TITLE" "$CONTENT" "$DATE"
+        env:
+          TITLE: ${{ github.event.inputs.title }}
+          CONTENT: ${{ github.event.inputs.content }}
+          DATE: ${{ github.event.inputs.date }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Add announcement: ${{ github.event.inputs.title }}"
@@ -51,8 +52,8 @@ jobs:
 
             **Title:** ${{ github.event.inputs.title }}
             **Content:** ${{ github.event.inputs.content }}
-            **Timestamp:** ${{ steps.timestamp.outputs.timestamp }}
+            **Date:** ${{ github.event.inputs.date || 'now' }}
 
             This PR was automatically created by the Add Announcement workflow.
-          branch: "add-announcement-${{ steps.timestamp.outputs.timestamp }}"
+          branch: "add-announcement-${{ github.run_id }}"
           delete-branch: true
