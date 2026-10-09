@@ -1,0 +1,12 @@
+name: Fusian Dance Crew
+email: fusianmunich@gmail.com
+instagram: https://www.instagram.com/fusiandance/
+trainingHours:
+  - day: Sunday
+    start: "19:00"
+    end: "20:30"
+    location: Fusian Studio
+  - day: Wednesday
+    start: "19:00"
+    end: "20:30"
+    location: Fusian Studio

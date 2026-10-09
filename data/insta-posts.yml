@@ -1,0 +1,9 @@
+# Instagram posts (homepage carousel + /gallery), shown in file order: newest first.
+# url: https://www.instagram.com/p/<id>/ or https://www.instagram.com/reel/<id>/
+# Entries with `source: sheet` come from the Google Form and are rewritten by
+# .github/workflows/sheet-sync.yml. Edit those in the sheet, not here.
+
+- url: https://www.instagram.com/p/DQBFGKKjL4Q/
+- url: https://www.instagram.com/reel/DMF_miRspwU/
+- url: https://www.instagram.com/p/DMLYMjtMbRe/
+- url: https://www.instagram.com/p/DA5T5fhCcOc/

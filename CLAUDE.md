@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Website for Fusian Dance Crew, deployed to GitHub Pages at https://fusiandance.github.io. Next.js 15 (app router) + React 19, TypeScript, Tailwind CSS v4, shadcn/ui (new-york style, lucide icons), Zustand.
+Website for Fusian Dance Crew, deployed to GitHub Pages at https://fusiandance.github.io. Next.js 15 (app router) + React 19, TypeScript, Tailwind CSS v4, shadcn/ui (new-york style, lucide icons).
 
 ## Commands
 
@@ -12,17 +12,18 @@ npm run build          # runs prebuild (feature flags) then static export to out
 npm run lint           # next lint
 npx tsc --noEmit       # typecheck (CI runs this)
 FEATURE_AUDITION=true npm run build   # build with a feature flag enabled
+node --test "scripts/*.test.mjs"   # self-check for scripts/content.mjs
 ```
 
-There is no test suite. CI (`.github/workflows/build.yml`) runs lint, typecheck, and build on PRs.
+The only tests are `scripts/*.test.mjs`. CI (`.github/workflows/build.yml`) runs them, lint, typecheck, and build on PRs.
 
 ## Architecture
 
-**Static export only.** `next.config.ts` sets `output: 'export'`, `trailingSlash: true`, unoptimized images. No server runtime, API routes, or server-side data — anything dynamic must be fetched client-side.
+**Static export only.** `next.config.ts` sets `output: 'export'`, `trailingSlash: true`, unoptimized images. No server runtime or API routes: server components only run at build time, so anything that must change without a redeploy has to be fetched client-side.
 
-**Content lives in `public/*.json`, not in code.** `public/announcements.json` and `public/insta-posts.json` are fetched at runtime in the browser by Zustand stores in `src/lib/state/` (`announcement.state.ts`, `insta-post.state.ts`). The stores kick off the fetch on creation and skip it on the server (`typeof window === "undefined"`). Fetch URLs are prefixed with `NEXT_PUBLIC_BASE_PATH`. Contact info and training hours are hardcoded in `src/lib/state/contact.ts`.
+**Content lives in `data/*.yml`, not in code.** `src/lib/data.ts` reads `announcements.yml`, `insta-posts.yml` and `contact.yml` with `fs` at build time, so it can only be imported from server components; pages pass the data to client components as props. Anything that depends on the current time (past/upcoming split) uses `useNow(buildTime)` from `src/lib/hooks/use-now.ts`: it renders with the build time (matching the static HTML) and switches to the real time after mount. Announcement `date` is ISO 8601 with offset; dates are formatted with `timeZone: "Europe/Berlin"` so build and browser agree. Instagram posts are stored as canonical post URLs only; `PostCard` builds the embed HTML from them, so `data.ts` rejects any URL that isn't `https://www.instagram.com/(p|reel)/<id>/`.
 
-**Content workflows.** `announcement-add.yml` and `insta-post-add.yml` are `workflow_dispatch` jobs that append to those JSON files and open a PR. Merging to `main` triggers `deploy.yml`, which calls `build.yml` with `static_export: true` and publishes `out/` to Pages. Announcement `unixtimestamp` in the JSON is in **seconds** (the store multiplies by 1000).
+**Content workflows.** All writes to the YAML files go through `scripts/content.mjs` (preserves comments and manual entries). `announcement-add.yml` / `insta-post-add.yml` (`workflow_dispatch`) add an entry and open a PR. `sheet-sync.yml` runs hourly: it fetches the published Google Sheet CSV (`vars.SHEET_CSV_URL`), replaces every entry tagged `source: sheet` with the current sheet rows, commits to `main`, and calls `deploy.yml` via `workflow_call` (a `GITHUB_TOKEN` push doesn't trigger it). Never hand-edit `source: sheet` entries; the next sync overwrites them. Merging to `main` triggers `deploy.yml`, which calls `build.yml` with `static_export: true` and publishes `out/` to Pages.
 
 **Feature flags.** `scripts/toggle-feature-flags.js` reads `FEATURE_<KEY>=true` env vars against its `featureFlags` list:
 - as `prebuild`, it generates `src/config/nav-items.generated.ts` (nav entries for enabled features, merged with the fixed items in `src/lib/models/nav-item.ts`). Gitignored; don't hand-edit.

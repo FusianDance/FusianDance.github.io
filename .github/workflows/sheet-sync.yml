@@ -1,0 +1,63 @@
+name: Sync Google Form
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sheet-sync
+  cancel-in-progress: false
+
+# The called deploy workflow needs pages/id-token
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  sync:
+    # no-op until the published sheet URL is configured
+    if: vars.SHEET_CSV_URL != ''
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync sheet entries
+        run: node scripts/content.mjs sync
+        env:
+          SHEET_CSV_URL: ${{ vars.SHEET_CSV_URL }}
+
+      - name: Commit changes
+        id: commit
+        run: |
+          if git diff --quiet -- data/; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "content: sync Google Form entries" -- data/
+          git push
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+  # Called explicitly: pushes made with GITHUB_TOKEN don't trigger deploy.yml
+  deploy:
+    needs: sync
+    if: needs.sync.outputs.sha != ''
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.sync.outputs.sha }}
+    secrets: inherit

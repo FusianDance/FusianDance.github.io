@@ -1,4 +1,4 @@
 export type InstaPost = {
-    id: string;
-    html: string;
-}
+  id: string;
+  url: string;
+};

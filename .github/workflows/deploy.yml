@@ -15,6 +15,13 @@ on:
         description: 'e.g. Feature flags like "FEATURE_AUDITION=true FEATURE_STH=false"'
         default: ""
         type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to build (default: triggering commit)'
+        required: false
+        default: ''
+        type: string
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -32,6 +39,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Save build env config
         id: save-env
@@ -52,6 +61,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       static_export: true
+      ref: ${{ inputs.ref }}
       additional_build_env: ${{ needs.setup.outputs.build_env }}
 
   deploy:
@@ -63,6 +73,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
