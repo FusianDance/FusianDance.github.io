@@ -8,7 +8,7 @@ A modern React Router website for Fusian Dance Crew built with TypeScript, Tailw
 
 ### Prerequisites
 
-- Node.js 22.22 or higher
+- Node.js 26 (CI uses 26; 22.22+ works)
 - npm
 
 ### Installation
