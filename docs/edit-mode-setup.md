@@ -151,6 +151,6 @@ Apps Script logs every run under **Executions** (left sidebar) with the full err
 ## Notes
 
 - The account picker lists every Google account signed in to the browser. Pick the one in `ALLOWED_EMAILS`; other accounts are turned away.
-- If someone else saved the same file while you were editing, Save refuses. Cancel and redo your edits.
+- If someone else saved the same file while you were editing, Save refuses. Discard your changes and redo them.
 - Unsaved photos are kept in browser storage (about 5 MB). With many large photos, Save first and then add more.
 - Local testing: `npm run dev`, then use **Log in** on `http://localhost:5173`. Saving commits to the real `main`.

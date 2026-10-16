@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Eye, Pencil } from "lucide-react";
+import { Eye, LogIn, LogOut, Pencil, Save, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   finishLogin,
   isDirty,
@@ -16,7 +18,17 @@ import {
   useToken,
 } from "@/lib/edit";
 
-/** Floating edit controls, shown while logged in: Log out on the left, Cancel / Edit-Preview / Save on the right. */
+/** Hover text, also the accessible name of the (icon) button it wraps. */
+function Tip({ label, children }: { label: string; children: React.ReactElement }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger aria-label={label} render={children} />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
   const token = useToken();
   const session = useSession();
@@ -80,11 +92,17 @@ export function EditBar() {
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex items-end justify-between gap-2 *:pointer-events-auto *:shadow-lg">
       {token ? (
-        <Button variant="outline" onClick={onLogout} disabled={saving}>
-          Log out
-        </Button>
+        <Tip label="Log out">
+          <Button variant="outline" size="icon" onClick={onLogout} disabled={saving}>
+            <LogOut />
+          </Button>
+        </Tip>
       ) : (
-        <Button onClick={login}>Log in</Button>
+        <Tip label="Log in">
+          <Button size="icon" onClick={login}>
+            <LogIn />
+          </Button>
+        </Tip>
       )}
       <div className="flex max-w-xl flex-wrap items-center justify-end gap-3 rounded-lg border bg-background p-3">
         <p className="min-w-0 flex-1 text-sm text-muted-foreground" aria-live="polite">
@@ -92,16 +110,33 @@ export function EditBar() {
         </p>
         {session ? (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={cancel} disabled={!dirty || saving}>
-              Cancel
-            </Button>
-            <Button variant="outline" onClick={() => setPreview(!session.preview)}>
-              {session.preview ? <Pencil /> : <Eye />}
-              {session.preview ? "Edit" : "Preview"}
-            </Button>
-            <Button onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
+            <Tip label="Discard changes">
+              <Button variant="outline" size="icon" onClick={cancel} disabled={!dirty || saving}>
+                <Undo2 />
+              </Button>
+            </Tip>
+            <ToggleGroup
+              variant="outline"
+              spacing={0}
+              value={[session.preview ? "preview" : "edit"]}
+              onValueChange={([mode]) => mode && setPreview(mode === "preview")}
+            >
+              <Tip label="Edit">
+                <ToggleGroupItem value="edit">
+                  <Pencil />
+                </ToggleGroupItem>
+              </Tip>
+              <Tip label="Preview">
+                <ToggleGroupItem value="preview">
+                  <Eye />
+                </ToggleGroupItem>
+              </Tip>
+            </ToggleGroup>
+            <Tip label={saving ? "Saving…" : "Save"}>
+              <Button size="icon" onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
+                <Save />
+              </Button>
+            </Tip>
           </div>
         ) : (
           !token && (

@@ -259,7 +259,7 @@ export async function save(token: string, { draft, base, shas }: Session) {
     const file = await getFile(token, key, head);
     if (file.sha !== shas[key]) {
       throw new Error(
-        `${FILES[key]} was changed by someone else since you started editing. Cancel and redo your edits.`,
+        `${FILES[key]} was changed by someone else since you started editing. Discard your changes and redo them.`,
       );
     }
     const content = serialize(key, draft, file.text);
