@@ -12,6 +12,7 @@ import "./app.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { EditBar } from "@/components/edit/edit-bar";
 import { contact } from "@/lib/data.server";
 
 export const meta: Route.MetaFunction = () => [
@@ -42,6 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <main className="flex-1">{children}</main>
             {data && <Footer contact={data.contact} />}
           </div>
+          <EditBar />
         </ThemeProvider>
         <ScrollRestoration />
         <Scripts />

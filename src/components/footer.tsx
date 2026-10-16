@@ -2,8 +2,10 @@ import { Link } from "react-router";
 import { type NavItem, NavItems } from "@/lib/models/nav-item";
 import type { Contact } from "@/lib/models/contact";
 import { FusianIcon } from "@/components/fusian.icon";
+import { login, useDraft } from "@/lib/edit";
 
-export function Footer({ contact }: { contact: Contact }) {
+export function Footer(props: { contact: Contact }) {
+  const contact = useDraft()?.contact ?? props.contact;
   return (
     <footer className="border-t bg-background">
       <div className="flex w-full flex-row flex-wrap gap-8 px-4 py-8 md:justify-around">
@@ -53,6 +55,16 @@ export function Footer({ contact }: { contact: Contact }) {
               >
                 {`Email: ${contact.email}`}
               </a>
+            </li>
+            <li>
+              <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-foreground">
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <button onClick={login} className="text-muted-foreground transition-colors hover:text-foreground">
+                Edit site
+              </button>
             </li>
           </ul>
         </div>
