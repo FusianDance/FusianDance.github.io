@@ -1,7 +1,6 @@
 # Announcements and events (homepage + /events).
 # date: ISO 8601 with UTC offset, e.g. 2025-10-20T22:00:00+02:00
-# Entries with `source: sheet` come from the Google Form and are rewritten by
-# .github/workflows/sheet-sync.yml. Edit those in the sheet, not here.
+# Edited via the website's edit mode (footer → Edit). Hand edits are fine too.
 
 - title: Website Launch
   content: We're excited to announce the launch of our new website!

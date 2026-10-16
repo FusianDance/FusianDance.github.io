@@ -3,13 +3,14 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { UpcomingAnnouncements } from "@/components/upcoming-announcements";
 import type { Route } from "./+types/home";
 import { announcements, posts } from "@/lib/data.server";
+import { useLiveContent } from "@/lib/edit";
 
 export function loader() {
   return { announcements, posts, buildTime: Date.now() };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { announcements, posts, buildTime } = loaderData;
+  const { announcements, posts, buildTime } = useLiveContent(loaderData);
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}

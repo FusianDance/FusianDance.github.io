@@ -7,5 +7,7 @@ export default [
   route("about", "routes/about.tsx"),
   route("events", "routes/events.tsx"),
   route("gallery", "routes/gallery.tsx"),
+  route("edit/contact", "routes/edit-contact.tsx"),
+  route("privacy", "routes/privacy.tsx"),
   ...(process.env.FEATURE_AUDITION === "true" ? [route("audition", "routes/audition.tsx")] : []),
 ] satisfies RouteConfig;
