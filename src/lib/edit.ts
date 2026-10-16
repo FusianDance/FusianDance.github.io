@@ -1,5 +1,5 @@
 // Edit mode: edits data/* in the GitHub repo straight from the browser, no server of our own.
-// Login: the footer "Edit site" button sends the browser to Google's account picker ("Sign in with Google"),
+// Login: the footer "Log in" button sends the browser to Google's account picker ("Sign in with Google"),
 // which comes back to / with a Google ID token in the hash. The site POSTs that to the Apps Script web app
 // (apps-script/Code.gs), which checks it and the email allowlist and answers with a 1h GitHub App token.
 // Edits are a draft in localStorage (survives reloads and re-login) and get saved as one commit to main,
@@ -35,8 +35,9 @@ export type Draft = {
   /** Photos pasted into the about page and not yet in the repo: "/uploads/<name>.jpg" → data URL. */
   uploads: Record<string, string>;
 };
-/** draft = being edited, base = as loaded from GitHub, shas = blob shas of the loaded files (conflict check). */
-export type Session = { draft: Draft; base: Draft; shas: Record<FileKey, string> };
+/** draft = being edited, base = as loaded from GitHub, shas = blob shas of the loaded files (conflict check),
+ * preview = show the pages with the draft instead of the editors. */
+export type Session = { draft: Draft; base: Draft; shas: Record<FileKey, string>; preview?: boolean };
 type Token = { token: string; expires: string };
 
 // ---- localStorage-backed store (prerendered HTML renders without it, the client switches after hydration)
@@ -96,6 +97,16 @@ const notExpired = (t: Token) => Date.parse(t.expires) > Date.now() + 60_000;
 export const useToken = () => useStored<Token>(TOKEN_KEY, notExpired)?.token ?? null;
 export const useSession = () => useStored<Session>(SESSION_KEY);
 export const useDraft = () => useSession()?.draft ?? null;
+/** The draft while the pages show their editors (logged in, not previewing), else null. */
+export function useEditDraft() {
+  const session = useSession();
+  return session && !session.preview ? session.draft : null;
+}
+
+export function setPreview(preview: boolean) {
+  const session = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
+  if (session) write(SESSION_KEY, { ...session, preview });
+}
 
 /** false if the change didn't fit into browser storage (too many unsaved photos). */
 export function updateDraft(fn: (draft: Draft) => Draft) {
@@ -161,7 +172,7 @@ export function finishLogin(): Promise<string> | null {
   })();
 }
 
-export function exitEditMode() {
+export function logout() {
   write(SESSION_KEY, null);
   write(TOKEN_KEY, null);
 }
@@ -277,7 +288,7 @@ export async function save(token: string, { draft, base, shas }: Session) {
   await gh(token, "/git/refs/heads/main", { method: "PATCH", json: { sha: commit.sha } });
   // Re-reading main right away can return the old files, so the new base comes from what we sent.
   // Edits typed while saving stay in the draft. Saved photos stay in uploads so the preview shows them
-  // until the deploy is live; Exit clears them.
+  // until the deploy is live; Log out clears them.
   const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
   if (current) write(SESSION_KEY, { ...current, base: draft, shas: newShas } satisfies Session);
 }

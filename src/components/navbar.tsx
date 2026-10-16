@@ -11,12 +11,17 @@ import { Button } from "@/components/ui/button";
 import { FusianIcon } from "@/components/fusian.icon";
 import { Menu, X } from "lucide-react";
 import { NavItems, type NavItem } from "@/lib/models/nav-item";
+import { useEditDraft } from "@/lib/edit";
+
+// Edit-only page, in the nav while editing.
+const EDIT_ITEMS: NavItem[] = [{ navTitle: "Contact", appRoute: "/edit/contact" }];
 
 export function Navbar() {
   const pathname = useLocation().pathname.replace(/(.)\/$/, "$1");
   // The mobile menu remembers the page it was opened on, so it closes on navigation.
   const [menuOpenedAt, setMenuOpenedAt] = React.useState<string | null>(null);
   const isMobileMenuOpen = menuOpenedAt === pathname;
+  const items = useEditDraft() ? [...NavItems, ...EDIT_ITEMS] : NavItems;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,7 +38,7 @@ export function Navbar() {
           {/* Desktop Navigation Menu */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              {NavItems.map((item: NavItem) => (
+              {items.map((item: NavItem) => (
                 <NavigationMenuItem key={item.appRoute}>
                   <NavigationMenuLink
                     render={<Link to={item.appRoute} />}
@@ -66,7 +71,7 @@ export function Navbar() {
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="flex flex-col border-t p-2">
-              {NavItems.map((item: NavItem) => (
+              {items.map((item: NavItem) => (
                 <Link
                   key={item.appRoute}
                   to={item.appRoute}
