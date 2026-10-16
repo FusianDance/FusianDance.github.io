@@ -32,6 +32,13 @@ export function Footer(props: { contact: Contact }) {
                 </Link>
               </li>
             ))}
+            {!draft && (
+              <li>
+                <button onClick={login} className="text-muted-foreground transition-colors hover:text-foreground">
+                  Log in
+                </button>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -62,13 +69,6 @@ export function Footer(props: { contact: Contact }) {
                 Privacy
               </Link>
             </li>
-            {!draft && (
-              <li>
-                <button onClick={login} className="text-muted-foreground transition-colors hover:text-foreground">
-                  Log in
-                </button>
-              </li>
-            )}
           </ul>
         </div>
       </div>
