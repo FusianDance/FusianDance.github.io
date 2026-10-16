@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Eye, LogIn, LogOut, Pencil, Save, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tip } from "@/components/edit/tip";
 import {
   finishLogin,
   isDirty,
@@ -17,16 +17,6 @@ import {
   useSession,
   useToken,
 } from "@/lib/edit";
-
-/** Hover text, also the accessible name of the (icon) button it wraps. */
-function Tip({ label, children }: { label: string; children: React.ReactElement }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger aria-label={label} render={children} />
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 /** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
