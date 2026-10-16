@@ -3,6 +3,10 @@ import type { Route } from "./+types/gallery";
 import { posts } from "@/lib/data.server";
 import { useDraft } from "@/lib/edit";
 import { PostsEditor } from "@/components/edit/posts-editor";
+import { seo } from "@/lib/seo";
+
+export const meta: Route.MetaFunction = () =>
+  seo("/gallery/", "Gallery", "Photos and videos of Fusian Dance Crew, a dance crew in Munich, from our Instagram.");
 
 export function loader() {
   return { posts };

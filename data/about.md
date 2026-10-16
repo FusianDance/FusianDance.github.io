@@ -1,6 +1,6 @@
 # About Fusian Dance Crew
 
-Founded in 2017, Fusian Dance Crew has become a leading force in the local dance community, bringing together passionate dancers from all backgrounds and skill levels.
+Founded in 2017 in Munich, Fusian Dance Crew has become a leading force in the local dance community, bringing together passionate dancers from all backgrounds and skill levels.
 
 ## Our Mission
 

@@ -2,6 +2,8 @@ import { ContactEditor } from "@/components/edit/contact-editor";
 import { Button } from "@/components/ui/button";
 import { login, useDraft } from "@/lib/edit";
 
+export const meta = () => [{ title: "Edit contact – Fusian Dance Crew" }, { name: "robots", content: "noindex" }];
+
 // Edit-mode only page, not in the nav.
 export default function EditContactPage() {
   const draft = useDraft();
