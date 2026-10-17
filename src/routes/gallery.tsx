@@ -1,7 +1,7 @@
 import { PostCard } from "@/components/post.card";
 import type { Route } from "./+types/gallery";
 import { posts } from "@/lib/data.server";
-import { useDraft } from "@/lib/edit";
+import { useEditDraft, useLiveContent } from "@/lib/edit";
 import { PostsEditor } from "@/components/edit/posts-editor";
 import { seo } from "@/lib/seo";
 
@@ -13,9 +13,9 @@ export function loader() {
 }
 
 export default function GalleryPage({ loaderData }: Route.ComponentProps) {
-  const draft = useDraft();
-  const { posts } = loaderData;
-  if (draft) return <PostsEditor draft={draft} />;
+  const editDraft = useEditDraft();
+  const { posts } = useLiveContent(loaderData);
+  if (editDraft) return <PostsEditor draft={editDraft} />;
   return (
     <div className="container mx-auto justify-center px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="mb-8 text-4xl font-bold">Gallery</h1>

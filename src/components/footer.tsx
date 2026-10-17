@@ -5,7 +5,8 @@ import { FusianIcon } from "@/components/fusian.icon";
 import { login, useDraft } from "@/lib/edit";
 
 export function Footer(props: { contact: Contact }) {
-  const contact = useDraft()?.contact ?? props.contact;
+  const draft = useDraft();
+  const contact = draft?.contact ?? props.contact;
   return (
     <footer className="border-t bg-background">
       <div className="flex w-full flex-row flex-wrap gap-8 px-4 py-8 md:justify-around">
@@ -31,6 +32,13 @@ export function Footer(props: { contact: Contact }) {
                 </Link>
               </li>
             ))}
+            {!draft && (
+              <li>
+                <button onClick={login} className="text-muted-foreground transition-colors hover:text-foreground">
+                  Log in
+                </button>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -60,11 +68,6 @@ export function Footer(props: { contact: Contact }) {
               <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-foreground">
                 Privacy
               </Link>
-            </li>
-            <li>
-              <button onClick={login} className="text-muted-foreground transition-colors hover:text-foreground">
-                Edit site
-              </button>
             </li>
           </ul>
         </div>

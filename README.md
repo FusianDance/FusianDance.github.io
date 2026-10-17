@@ -89,12 +89,12 @@ Site content lives in `data/` as YAML and is read at build time. Edit it with th
 
 ## 🖊️ Edit Mode (no git needed)
 
-Crew members edit the site right on the site. The footer has an **Edit site** button. After login, `/events`, `/gallery` and `/about` turn into editors, `/edit/contact` edits the contact info and training hours, and a floating bar appears with **Cancel** and **Save**. The about page is GitHub flavored Markdown with a live preview: paste a link onto selected text to link it, and paste, drop or add photos (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept in the browser, so they survive a reload or a new login.
+Crew members edit the site right on the site. The footer has a **Log in** button. After login, `/events`, `/gallery` and `/about` turn into editors, the navbar gets a Contact entry (`/edit/contact`, while editing) for the contact info and training hours, and floating icon buttons appear (hover for their names): **Log out** on the left, and on the right **Discard changes**, an **Edit/Preview** toggle (Preview shows the normal pages with your unsaved changes) and **Save**. The about page is edited like a document (toolbar for headings, bold, lists, highlighted note, link and photos) and saved as Markdown: paste a link onto selected text to link it, and paste, drop or add photos right where they should go (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept in the browser, so they survive a reload or a new login.
 
 There is no server of our own:
 
 ```
-Edit site → Google's account picker ("Sign in with Google", pick any of your Google accounts)
+Log in → Google's account picker ("Sign in with Google", pick any of your Google accounts)
           → back to the site with a Google ID token (proves which account you picked)
           → site sends it to the Apps Script web app, which checks it and the allowlist
           → answers with a GitHub App token (1h, this repo, contents only)
