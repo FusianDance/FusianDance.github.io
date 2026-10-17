@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { Eye, LogIn, LogOut, Pencil, Save, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tip } from "@/components/edit/tip";
 import {
-  exitEditMode,
   finishLogin,
   isDirty,
   login,
+  logout,
   problem,
   save,
+  setPreview,
   startSession,
+  updateDraft,
   useSession,
   useToken,
 } from "@/lib/edit";
 
-/** Floating Cancel/Save bar, shown while in edit mode. */
+/** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
   const token = useToken();
   const session = useSession();
@@ -44,10 +49,16 @@ export function EditBar() {
   const dirty = !!session && isDirty(session);
   const blocker = session && problem(session.draft);
 
-  function cancel() {
-    if (dirty && !confirm("Discard all unsaved changes?")) return;
+  function onLogout() {
+    if (dirty && !confirm("Log out and discard all unsaved changes?")) return;
     setMessage(null);
-    exitEditMode();
+    logout();
+  }
+
+  function cancel() {
+    if (!confirm("Discard all unsaved changes?")) return;
+    setMessage(null);
+    updateDraft(() => session!.base);
   }
 
   async function onSave() {
@@ -63,41 +74,66 @@ export function EditBar() {
     }
   }
 
-  let status = message ?? blocker ?? (dirty ? "Unsaved changes" : "Edit mode: no changes yet");
+  let status = message ?? blocker ?? (dirty ? "Unsaved changes" : "No changes yet");
   if (!session && !message) status = "Loading content…";
   if (!token && session) status = "Login expired. Your changes are kept, log in again to save them.";
 
+  // Left: login state. Right: status and the draft's actions.
   return (
-    <div className="fixed inset-x-4 bottom-4 z-50 flex flex-wrap items-center gap-3 rounded-lg border bg-background p-3 shadow-lg sm:left-auto sm:max-w-xl">
-      {token && session && (
-        <nav className="flex gap-3 text-sm font-medium">
-          <Link to="/events" className="underline-offset-4 hover:underline">
-            Events
-          </Link>
-          <Link to="/gallery" className="underline-offset-4 hover:underline">
-            Gallery
-          </Link>
-          <Link to="/about" className="underline-offset-4 hover:underline">
-            About
-          </Link>
-          <Link to="/edit/contact" className="underline-offset-4 hover:underline">
-            Contact
-          </Link>
-        </nav>
-      )}
-      <p className="min-w-0 flex-1 text-sm text-muted-foreground" aria-live="polite">
-        {status}
-      </p>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={cancel} disabled={saving}>
-          {dirty ? "Cancel" : "Exit"}
-        </Button>
-        {token ? (
-          <Button onClick={onSave} disabled={!dirty || !!blocker || saving}>
-            {saving ? "Saving…" : "Save"}
+    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex items-end justify-between gap-2 *:pointer-events-auto *:shadow-lg">
+      {token ? (
+        <Tip label="Log out">
+          <Button variant="outline" size="icon" onClick={onLogout} disabled={saving}>
+            <LogOut />
           </Button>
+        </Tip>
+      ) : (
+        <Tip label="Log in">
+          <Button size="icon" onClick={login}>
+            <LogIn />
+          </Button>
+        </Tip>
+      )}
+      <div className="flex max-w-xl flex-wrap items-center justify-end gap-3 rounded-lg border bg-background p-3">
+        <p className="min-w-0 flex-1 text-sm text-muted-foreground" aria-live="polite">
+          {status}
+        </p>
+        {session ? (
+          <div className="flex gap-2">
+            <Tip label="Discard changes">
+              <Button variant="outline" size="icon" onClick={cancel} disabled={!dirty || saving}>
+                <Undo2 />
+              </Button>
+            </Tip>
+            <ToggleGroup
+              variant="outline"
+              spacing={0}
+              value={[session.preview ? "preview" : "edit"]}
+              onValueChange={([mode]) => mode && setPreview(mode === "preview")}
+            >
+              <Tip label="Edit">
+                <ToggleGroupItem value="edit">
+                  <Pencil />
+                </ToggleGroupItem>
+              </Tip>
+              <Tip label="Preview">
+                <ToggleGroupItem value="preview">
+                  <Eye />
+                </ToggleGroupItem>
+              </Tip>
+            </ToggleGroup>
+            <Tip label={saving ? "Saving…" : "Save"}>
+              <Button size="icon" onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
+                <Save />
+              </Button>
+            </Tip>
+          </div>
         ) : (
-          <Button onClick={login}>Log in</Button>
+          !token && (
+            <Button variant="ghost" onClick={() => setMessage(null)}>
+              Close
+            </Button>
+          )
         )}
       </div>
     </div>

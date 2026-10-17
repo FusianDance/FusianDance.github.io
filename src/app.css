@@ -123,3 +123,58 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Shared by the read-only Markdown renderer and the rich-text editor (.ProseMirror inside). */
+@layer components {
+  .rich-text {
+    & h1 {
+      @apply mb-8 text-4xl font-bold;
+    }
+    & h2 {
+      @apply mt-8 mb-4 text-2xl font-semibold;
+    }
+    & h3 {
+      @apply mt-6 mb-2 text-xl font-semibold;
+    }
+    & p {
+      @apply mb-6;
+    }
+    & ul {
+      @apply mb-6 list-inside list-disc space-y-2;
+    }
+    & ol {
+      @apply mb-6 list-inside list-decimal space-y-2;
+    }
+    /* Paragraphs in list items must not push the marker onto its own line. */
+    & li > p {
+      @apply mb-0 inline;
+    }
+    & blockquote {
+      @apply my-6 rounded-lg border border-destructive/40 px-4 py-3 text-lg text-destructive;
+    }
+    & blockquote > p {
+      @apply mb-0;
+    }
+    & hr {
+      @apply my-8;
+    }
+    & code {
+      @apply rounded bg-muted px-1 py-0.5 font-mono text-sm;
+    }
+    & table {
+      @apply mb-6 w-full border-collapse text-sm;
+    }
+    & th {
+      @apply border px-3 py-2 text-left font-semibold;
+    }
+    & td {
+      @apply border px-3 py-2;
+    }
+    & a {
+      @apply text-primary underline-offset-4 hover:underline;
+    }
+    & img {
+      @apply my-6 max-w-full rounded-lg;
+    }
+  }
+}
