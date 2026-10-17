@@ -79,13 +79,13 @@ FusianDance.github.io/
 
 Site content lives in `data/` as YAML and is read at build time. Edit it with the edit mode (below) or with a pull request. Merging to `main` deploys the site.
 
-| File                     | What it holds                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `data/announcements.yml` | `title`, `content`, `date`. The date is ISO 8601 with offset, e.g. `2025-10-20T22:00:00+02:00`                                 |
-| `data/insta-posts.yml`   | `url` only, newest first. Use the canonical form `https://www.instagram.com/p/<id>/` or `https://www.instagram.com/reel/<id>/` |
-| `data/about.md`          | The about page, GitHub flavored Markdown. Photos go in `public/uploads/`                                                       |
-| `data/contact.yml`       | Contact info and training hours                                                                                                |
-| `data/privacy.md`        | The privacy policy at `/privacy` (linked in the footer and from the Google login). Hand edits only                             |
+| File                     | What it holds                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `data/announcements.yml` | `title`, `content`, `startDate`, optional `endDate` and `allDay`. Dates are ISO 8601 with offset, e.g. `2025-10-20T22:00:00+02:00` |
+| `data/insta-posts.yml`   | `url` only, newest first. Use the canonical form `https://www.instagram.com/p/<id>/` or `https://www.instagram.com/reel/<id>/`     |
+| `data/about.md`          | The about page, GitHub flavored Markdown. Photos go in `public/uploads/`                                                           |
+| `data/contact.yml`       | Contact info and training hours                                                                                                    |
+| `data/privacy.md`        | The privacy policy at `/privacy` (linked in the footer and from the Google login). Hand edits only                                 |
 
 ## 🖊️ Edit Mode (no git needed)
 

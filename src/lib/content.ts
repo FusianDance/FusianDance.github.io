@@ -5,7 +5,13 @@ import type { Announcement } from "./models/announcement";
 import type { InstaPost } from "./models/insta-post";
 
 /** Entries as stored in data/announcements.yml and data/insta-posts.yml. */
-export type AnnouncementEntry = { title: string; content: string; date: string };
+export type AnnouncementEntry = {
+  title: string;
+  content: string;
+  startDate: string;
+  endDate?: string;
+  allDay?: boolean;
+};
 export type PostEntry = { url: string };
 
 /** "YYYY-MM-DD[ |T]HH:MM[:SS]" in Munich time, or ISO with offset → ISO with offset. null if invalid. */
@@ -37,15 +43,28 @@ export function postUrl(text: string): string | null {
   return m ? `https://www.instagram.com/${m[1]}/${m[2]}/` : null;
 }
 
-/** Sorted newest first. Throws on an invalid date. */
+/** Midnight (Munich) after the day of this ISO date. */
+function nextBerlinDay(iso: string) {
+  const day = new Date(`${berlinLocal(iso).slice(0, 10)}T00:00Z`);
+  day.setUTCDate(day.getUTCDate() + 1);
+  return new Date(berlinIso(day.toISOString().slice(0, 10))!);
+}
+
+/** Sorted by when they're over, newest first. Throws on an invalid date or an end before the start. */
 export function toAnnouncements(entries: AnnouncementEntry[]): Announcement[] {
   return entries
     .map((entry, i) => {
-      const timestamp = new Date(entry.date);
-      if (isNaN(timestamp.getTime())) throw new Error(`data/announcements.yml: invalid date "${entry.date}"`);
-      return { id: String(i), title: entry.title, content: entry.content, timestamp };
+      const start = new Date(entry.startDate);
+      if (isNaN(start.getTime())) throw new Error(`data/announcements.yml: invalid startDate "${entry.startDate}"`);
+      const end = entry.endDate == null ? undefined : new Date(entry.endDate);
+      if (end && isNaN(end.getTime())) throw new Error(`data/announcements.yml: invalid endDate "${entry.endDate}"`);
+      if (end && end < start) throw new Error(`data/announcements.yml: "${entry.title}" ends before it starts`);
+      const allDay = entry.allDay === true;
+      const last = entry.endDate ?? entry.startDate;
+      const pastAt = allDay ? nextBerlinDay(last).getTime() : new Date(last).getTime();
+      return { id: String(i), title: entry.title, content: entry.content, start, end, allDay, pastAt };
     })
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    .sort((a, b) => b.pastAt - a.pastAt);
 }
 
 /** PostCard puts the URL into embed HTML, so only canonical post URLs get through. */
