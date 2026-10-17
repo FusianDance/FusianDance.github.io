@@ -137,15 +137,11 @@ The App is the identity that commits for the edit mode. It belongs to the org, s
 
 The `main` ruleset under **Settings → Rules → Rulesets** is currently disabled. If someone enables it, add the App to its **Bypass list** too.
 
-#### 3. Convert the private key
+#### 3. Copy the private key
 
-GitHub hands out the key in PKCS#1 format (`BEGIN RSA PRIVATE KEY`). Apps Script needs PKCS#8 (`BEGIN PRIVATE KEY`), and the script property field takes a single line. In a terminal, in the folder with the `.pem` file:
+Copy the whole content of the `.pem` file from step 1.5, including the `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----` lines: open it in a text editor, or run `pbcopy < fusian-site-editor.*.private-key.pem` in its folder (macOS). Paste it in step 5. The script property field drops the line breaks when you paste; that's fine, `Code.gs` restores them and converts the key to the format Apps Script needs.
 
-```bash
-openssl pkcs8 -topk8 -nocrypt -in fusian-site-editor.*.private-key.pem | awk '{printf "%s\\n", $0}' | pbcopy
-```
-
-This puts the key on the clipboard as one line with literal `\n` between the lines (`pbcopy` is macOS; on Linux drop `| pbcopy` and copy the output). It must start with `-----BEGIN PRIVATE KEY-----\n`. Paste it in step 5. Then delete the `.pem` file, and never commit it (`*.pem` is in `.gitignore`).
+Then delete the `.pem` file, and never commit it (`*.pem` is in `.gitignore`).
 
 #### 4. Create the Google login (OAuth client)
 
@@ -192,7 +188,7 @@ Do this signed in as `fusianmunich@gmail.com`. It owns the script, the key and t
    | `ALLOWED_EMAILS`  | Google accounts that may edit, comma separated, e.g. `fusianmunich@gmail.com, anna@gmail.com` |
    | `APP_ID`          | App ID from step 1.4                                                                          |
    | `INSTALLATION_ID` | Installation ID from step 1.7                                                                 |
-   | `PRIVATE_KEY`     | The one-line key from step 3 (clipboard)                                                      |
+   | `PRIVATE_KEY`     | The key from step 3 (clipboard)                                                               |
 
    Then **Save script properties**.
 
@@ -222,7 +218,7 @@ If the Google Form and its response Sheet from the earlier form sync were create
 
 - **Add or remove an editor:** edit `ALLOWED_EMAILS` under Apps Script **Project Settings** → **Script Properties**. It applies to the next login, no redeploy needed. A removed person's current token keeps working for up to 1 hour.
 - **New `Code.gs` version:** edit it in the Apps Script editor, save, then **Deploy** → **Manage deployments** → pencil icon → **Version: New version** → **Deploy**. This keeps the URL. "New deployment" would create a new URL instead.
-- **New private key** (if the old one leaked): App settings → **Private keys** → generate a new one, put it into the `PRIVATE_KEY` script property (step 3), then delete the old key on GitHub.
+- **New private key** (if the old one leaked): App settings → **Private keys** → generate a new one, put its content into the `PRIVATE_KEY` script property (step 3), redeploy is not needed, then delete the old key on GitHub.
 - **Change App permissions:** App settings → **Permissions & events**. An org owner must then accept the new permissions under org **Settings** → **GitHub Apps** → **Configure**.
 - **Another site address** (e.g. a custom domain): add it with a trailing slash to the OAuth client's **Authorized redirect URIs** (step 4.6).
 - **Lock everyone out right away:** org **Settings** → **GitHub Apps** → **Configure** → **Suspend**. Tokens stop working immediately. Emptying `ALLOWED_EMAILS` stops new logins.
@@ -241,8 +237,8 @@ Login errors show in the edit bar at the bottom of the site, or on a Google page
 | Edit bar: "Could not reach the login script. …"                                                       | `LOGIN_URL` is wrong, or the deployment's **Who has access** is not **Anyone** (step 5.5). Opening `LOGIN_URL` in a private window must show "Fusian edit login is running."                                                                                                                                                                          |
 | Edit bar: "Login failed, please try again."                                                           | The login was finished in another tab than it started in, or someone sent you a login link. Click **Edit site** again.                                                                                                                                                                                                                                |
 | Edit bar: "Login script error: You do not have permission to call UrlFetchApp.fetch"                  | `fusianmunich@gmail.com` didn't grant "Connect to an external service". Remove the access at [myaccount.google.com/connections](https://myaccount.google.com/connections) → **Fusian edit login** → **Delete all connections**, then redo step 5.6 by running `doGet` in the editor (function dropdown at the top → **Run**) and tick **Select all**. |
-| Edit bar: "Login script error: …" mentioning `401` / "A JSON web token could not be decoded"          | `APP_ID` or `PRIVATE_KEY` is wrong. Check the App ID (not the Client ID), and that the key starts with `-----BEGIN PRIVATE KEY-----\n` (PKCS#8, one line).                                                                                                                                                                                            |
-| Edit bar: "Login script error: Invalid argument: key"                                                 | The key is still PKCS#1 (`BEGIN RSA PRIVATE KEY`) or has real line breaks. Redo step 3.                                                                                                                                                                                                                                                               |
+| Edit bar: "Login script error: …" mentioning `401` / "A JSON web token could not be decoded"          | `APP_ID` or `PRIVATE_KEY` is wrong. Check the App ID (not the Client ID), and that the key is the full `.pem` content of this App.                                                                                                                                                                                                                    |
+| Edit bar: "Login script error: Invalid argument: key" or "Could not decode string"                    | `PRIVATE_KEY` is not a complete key, e.g. a line missing. Paste the full `.pem` content again (step 3). Make sure Apps Script runs the current `Code.gs` (new deployment version).                                                                                                                                                                    |
 | Edit bar: "Login script error: …" mentioning `404`                                                    | Wrong `INSTALLATION_ID`, or the App is not installed on the repo.                                                                                                                                                                                                                                                                                     |
 | Edit bar: "Login script error: …" mentioning `422` and "repositories"                                 | The App's installation doesn't include `FusianDance.github.io`. Org Settings → GitHub Apps → Configure → add the repo.                                                                                                                                                                                                                                |
 | Save: "GitHub 403: Resource not accessible by integration"                                            | The App lacks **Contents: Read and write**, or the org hasn't accepted a permission change yet.                                                                                                                                                                                                                                                       |
