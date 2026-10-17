@@ -4,7 +4,7 @@
 // (apps-script/Code.gs), which checks it and the email allowlist and answers with a 1h GitHub App token.
 // Edits are a draft in localStorage (survives reloads and re-login) and get saved as one commit to main,
 // which triggers deploy.yml.
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parse } from "yaml";
 import { gitBlobSha, toAnnouncements, toPosts, toYaml, type AnnouncementEntry, type PostEntry } from "./content";
 import type { Announcement } from "./models/announcement";
@@ -251,11 +251,11 @@ function serialize(key: FileKey, draft: Draft, fileText: string) {
   return toYaml(fileText, draft[key]);
 }
 
-/** Commits all changed files (and the photos the about page uses) as one commit on main.
+/** Commits all changed files (and the photos the about page uses) as one commit on main and returns its sha.
  * Afterwards the saved draft is the new base. */
 export async function save(token: string, { draft, base, shas }: Session) {
   const changed = KEYS.filter((key) => JSON.stringify(draft[key]) !== JSON.stringify(base[key]));
-  if (!changed.length) return;
+  if (!changed.length) return null;
   const head = (await gh<{ object: { sha: string } }>(token, "/git/ref/heads/main")).object.sha;
   const tree: { path: string; mode: string; type: string; content?: string; sha?: string }[] = [];
   const newShas = { ...shas };
@@ -295,4 +295,48 @@ export async function save(token: string, { draft, base, shas }: Session) {
   // until the deploy is live; Log out clears them.
   const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
   if (current) write(SESSION_KEY, { ...current, base: draft, shas: newShas } satisfies Session);
+  return commit.sha;
+}
+
+// ---- deploy status
+
+/** The deploy.yml run of `commit` (a sha just saved, whose run may not exist yet), else the latest one on main:
+ * "running" until it finished, then "failed" or null. Without auth: the edit token may only touch file contents.
+ * That allows 60 requests/h per IP, so it checks once and then only polls while a run is pending. */
+export function useDeploy(active: boolean, commit: string | null) {
+  const [state, setState] = useState<"running" | "failed" | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    async function poll() {
+      if (!document.hidden) {
+        const filter = commit ? `head_sha=${commit}` : "branch=main";
+        const res = await fetch(`${API}/actions/workflows/deploy.yml/runs?${filter}&per_page=1`, {
+          cache: "no-store",
+        }).catch(() => null);
+        if (stopped) return;
+        if (res?.ok) {
+          type Run = { status: string; conclusion: string | null };
+          const run = ((await res.json()) as { workflow_runs: Run[] }).workflow_runs[0];
+          if (stopped) return;
+          const next =
+            (commit && !run) || (run && run.status !== "completed")
+              ? "running"
+              : run && run.conclusion !== "success"
+                ? "failed"
+                : null;
+          setState(next);
+          if (next !== "running") return;
+        }
+      }
+      timer = setTimeout(poll, 20_000); // also retries after a network error or the rate limit
+    }
+    poll();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [active, commit]);
+  return active ? state : null;
 }

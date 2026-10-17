@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Eye, LogIn, LogOut, Pencil, Save, Undo2 } from "lucide-react";
+import { Eye, LoaderCircle, LogIn, LogOut, Pencil, Save, TriangleAlert, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tip } from "@/components/edit/tip";
@@ -14,6 +14,7 @@ import {
   setPreview,
   startSession,
   updateDraft,
+  useDeploy,
   useSession,
   useToken,
 } from "@/lib/edit";
@@ -24,6 +25,8 @@ export function EditBar() {
   const session = useSession();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [commit, setCommit] = useState<string | null>(null);
+  const deploy = useDeploy(!!session, commit);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,8 +68,8 @@ export function EditBar() {
     setSaving(true);
     setMessage(null);
     try {
-      await save(token!, session!);
-      setMessage("Saved. The site updates in about 2 minutes.");
+      setCommit(await save(token!, session!));
+      setMessage("Saved.");
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -95,6 +98,31 @@ export function EditBar() {
         </Tip>
       )}
       <div className="flex max-w-xl flex-wrap items-center justify-end gap-3 rounded-lg border bg-background p-3">
+        {deploy && (
+          <p className="flex basis-full items-center gap-2 text-sm" aria-live="polite">
+            {deploy === "running" ? (
+              <>
+                <LoaderCircle className="size-4 shrink-0 animate-spin" />
+                Updating the site (about 2 minutes). Until then it shows the old content.
+              </>
+            ) : (
+              <>
+                <TriangleAlert className="size-4 shrink-0 text-destructive" />
+                <span>
+                  The last site update failed, so it shows old content.{" "}
+                  <a
+                    className="underline"
+                    href="https://github.com/FusianDance/FusianDance.github.io/actions/workflows/deploy.yml"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Details
+                  </a>
+                </span>
+              </>
+            )}
+          </p>
+        )}
         <p className="min-w-0 flex-1 text-sm text-muted-foreground" aria-live="polite">
           {status}
         </p>
