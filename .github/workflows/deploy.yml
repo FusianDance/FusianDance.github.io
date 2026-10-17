@@ -6,6 +6,7 @@ on:
     paths:
       - "**"
       - "!**.md"
+      - "data/**"
       - "!.github/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/build.yml"
