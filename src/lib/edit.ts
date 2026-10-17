@@ -95,7 +95,9 @@ const notExpired = (t: Token) => Date.parse(t.expires) > Date.now() + 60_000;
 
 /** The GitHub token, or null when logged out or about to expire. */
 export const useToken = () => useStored<Token>(TOKEN_KEY, notExpired)?.token ?? null;
-export const useSession = () => useStored<Session>(SESSION_KEY);
+// Drafts from before announcements had startDate: dropped, a fresh one is loaded (saving it would be refused anyway).
+const current = (s: Session) => s.draft.announcements.every((a) => a.startDate);
+export const useSession = () => useStored<Session>(SESSION_KEY, current);
 export const useDraft = () => useSession()?.draft ?? null;
 /** The draft while the pages show their editors (logged in, not previewing), else null. */
 export function useEditDraft() {
@@ -241,7 +243,9 @@ function serialize(key: FileKey, draft: Draft, fileText: string) {
   if (key === "announcements") {
     return toYaml(
       fileText,
-      [...draft.announcements].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)),
+      [...draft.announcements]
+        .sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate))
+        .map(({ title, content, startDate, endDate, allDay }) => ({ title, content, startDate, endDate, allDay })),
     );
   }
   return toYaml(fileText, draft[key]);

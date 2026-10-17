@@ -13,8 +13,8 @@ export function useNow(buildTime: number) {
   );
 }
 
-// announcements are newest first: index of the first one that is not in the future.
+// announcements are sorted by pastAt, newest first: index of the first one that is over.
 export function todayIndex(announcements: Announcement[], now: number) {
-  const found = announcements.findIndex((a) => a.timestamp.getTime() <= now);
+  const found = announcements.findIndex((a) => a.pastAt <= now);
   return found === -1 ? announcements.length : found;
 }

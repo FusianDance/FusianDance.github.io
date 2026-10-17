@@ -1,25 +1,27 @@
 # Announcements and events (homepage + /events).
-# date: ISO 8601 with UTC offset, e.g. 2025-10-20T22:00:00+02:00
+# startDate: ISO 8601 with UTC offset, e.g. 2025-10-20T22:00:00+02:00
+# endDate (optional): same format; for all-day events the last day
+# allDay (optional): true shows the date only
 # Edited via the website's edit mode (footer → Edit). Hand edits are fine too.
 
 - title: Website Launch
   content: We're excited to announce the launch of our new website!
-  date: 2025-10-20T22:00:00+02:00
+  startDate: 2025-10-20T22:00:00+02:00
 - title: Audition First Training
   content: The first Training Session to learn the Audition choreo.
-  date: 2025-11-05T19:00:00+01:00
+  startDate: 2025-11-05T19:00:00+01:00
 - title: Audition Second Training
   content: The second Training Session to learn the Audition choreo.
-  date: 2025-11-09T19:00:00+01:00
+  startDate: 2025-11-09T19:00:00+01:00
 - title: Audition Third Training
   content: The third Training Session to learn the Audition choreo.
-  date: 2025-11-12T19:00:00+01:00
+  startDate: 2025-11-12T19:00:00+01:00
 - title: Audition Final Day
   content: The final Training, where you show what you've learned!
-  date: 2025-11-16T19:00:00+01:00
+  startDate: 2025-11-16T19:00:00+01:00
 - title: CSSA Performance
   content: Fusian will be performing at the CSSA Munich's Spring Festival Gala to celebrate the Chinese New Year!
-  date: 2026-01-31T20:00:00+01:00
+  startDate: 2026-01-31T20:00:00+01:00
 - title: Club Fair
   content: Fusian will be at the Student Club Fair in Garching (Maschinenwesen). Come by and say hi or get information on the upcoming auditions.
-  date: 2026-10-21T10:00:00+02:00
+  startDate: 2026-10-21T10:00:00+02:00

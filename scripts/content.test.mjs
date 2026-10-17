@@ -31,15 +31,48 @@ test("postUrl only lets canonical urls through", () => {
 
 test("toAnnouncements / toPosts validate", () => {
   const entries = [
-    { title: "Old", content: "", date: "2025-01-01T10:00:00+01:00" },
-    { title: "New", content: "", date: "2025-02-01T10:00:00+01:00" },
+    { title: "Old", content: "", startDate: "2025-01-01T10:00:00+01:00" },
+    { title: "New", content: "", startDate: "2025-02-01T10:00:00+01:00" },
+    // starts first, but is over last
+    { title: "Long", content: "", startDate: "2024-12-01T10:00:00+01:00", endDate: "2025-03-01T10:00:00+01:00" },
   ];
   assert.deepEqual(
     toAnnouncements(entries).map((a) => a.title),
-    ["New", "Old"],
+    ["Long", "New", "Old"],
   );
-  assert.throws(() => toAnnouncements([{ title: "x", content: "", date: "soon" }]), /invalid date/);
+  assert.throws(() => toAnnouncements([{ title: "x", content: "", startDate: "soon" }]), /invalid startDate/);
+  assert.throws(
+    () => toAnnouncements([{ title: "x", content: "", startDate: "2025-01-01T10:00:00+01:00", endDate: "later" }]),
+    /invalid endDate/,
+  );
+  const backwards = {
+    title: "x",
+    content: "",
+    startDate: "2025-01-02T10:00:00+01:00",
+    endDate: "2025-01-01T10:00:00+01:00",
+  };
+  assert.throws(() => toAnnouncements([backwards]), /ends before it starts/);
+  assert.throws(() => toAnnouncements([{ ...backwards, allDay: true }]), /ends before it starts/);
   assert.throws(() => toPosts([{ url: "https://www.instagram.com/p/x/?a=1" }]), /invalid post url/);
+});
+
+test("pastAt: end if set, all-day events last until the midnight after their last day (Munich)", () => {
+  const pastAt = (entry) => new Date(toAnnouncements([{ title: "x", content: "", ...entry }])[0].pastAt).toISOString();
+  assert.equal(pastAt({ startDate: "2026-03-12T19:00:00+01:00" }), "2026-03-12T18:00:00.000Z");
+  assert.equal(
+    pastAt({ startDate: "2026-03-12T19:00:00+01:00", endDate: "2026-03-12T21:00:00+01:00" }),
+    "2026-03-12T20:00:00.000Z",
+  );
+  assert.equal(pastAt({ startDate: "2026-03-12T00:00:00+01:00", allDay: true }), "2026-03-12T23:00:00.000Z");
+  assert.equal(
+    pastAt({ startDate: "2026-03-27T00:00:00+01:00", endDate: "2026-03-29T00:00:00+01:00", allDay: true }),
+    "2026-03-29T22:00:00.000Z", // DST starts on the 29th
+  );
+});
+
+test("the real announcements load", () => {
+  const text = readFileSync(new URL("../data/announcements.yml", import.meta.url), "utf8");
+  assert.ok(toAnnouncements(parse(text)).length > 0);
 });
 
 test("toYaml keeps the header comment and round-trips the real data files", () => {
@@ -51,6 +84,7 @@ test("toYaml keeps the header comment and round-trips the real data files", () =
   assert.match(out, /^# header\n/);
   assert.deepEqual(parse(out), [{ url: "b" }, { url: "c" }]);
   assert.deepEqual(parse(toYaml("# only a comment\n", [{ url: "u" }])), [{ url: "u" }]);
+  assert.doesNotMatch(toYaml("", [{ startDate: "d", endDate: undefined }]), /endDate/);
 });
 
 test("gitBlobSha matches git hash-object", async () => {

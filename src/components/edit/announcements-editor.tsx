@@ -12,11 +12,14 @@ const setAnnouncements = (fn: (list: AnnouncementEntry[]) => AnnouncementEntry[]
 const patch = (i: number, change: Partial<AnnouncementEntry>) =>
   setAnnouncements((list) => list.map((entry, j) => (j === i ? { ...entry, ...change } : entry)));
 
+/** Value for <input type="date"> or "datetime-local". */
+const fmt = (iso: string, allDay?: boolean) => berlinLocal(iso).slice(0, allDay ? 10 : 16);
+
 export function AnnouncementsEditor({ draft }: { draft: Draft }) {
   const add = () =>
     setAnnouncements((list) => [
       ...list,
-      { title: "", content: "", date: berlinIso(berlinLocal(new Date().toISOString()))! },
+      { title: "", content: "", startDate: berlinIso(berlinLocal(new Date().toISOString()))! },
     ]);
 
   return (
@@ -45,16 +48,6 @@ export function AnnouncementsEditor({ draft }: { draft: Draft }) {
                       value={entry.title}
                       onChange={(e) => patch(i, { title: e.target.value })}
                     />
-                    <Input
-                      type="datetime-local"
-                      className="w-auto"
-                      aria-label="Date and time (Munich)"
-                      value={berlinLocal(entry.date)}
-                      onChange={(e) => {
-                        const iso = berlinIso(e.target.value);
-                        if (iso) patch(i, { date: iso });
-                      }}
-                    />
                     <Button
                       variant="ghost"
                       size="icon"
@@ -63,6 +56,54 @@ export function AnnouncementsEditor({ draft }: { draft: Draft }) {
                     >
                       <Trash2 />
                     </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type={entry.allDay ? "date" : "datetime-local"}
+                      className="w-auto"
+                      aria-label="Start (Munich)"
+                      value={fmt(entry.startDate, entry.allDay)}
+                      onChange={(e) => {
+                        const iso = berlinIso(e.target.value);
+                        if (!iso) return;
+                        patch(i, {
+                          startDate: iso,
+                          ...(entry.endDate && Date.parse(entry.endDate) < Date.parse(iso) ? { endDate: iso } : {}),
+                        });
+                      }}
+                    />
+                    <span aria-hidden>–</span>
+                    <Input
+                      type={entry.allDay ? "date" : "datetime-local"}
+                      className="w-auto"
+                      aria-label="End (Munich), optional"
+                      min={fmt(entry.startDate, entry.allDay)}
+                      value={entry.endDate ? fmt(entry.endDate, entry.allDay) : ""}
+                      onChange={(e) => {
+                        const iso = berlinIso(e.target.value);
+                        if (!e.target.value) patch(i, { endDate: undefined });
+                        else if (iso && Date.parse(iso) >= Date.parse(entry.startDate)) patch(i, { endDate: iso });
+                      }}
+                    />
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!!entry.allDay}
+                        onChange={(e) =>
+                          patch(
+                            i,
+                            e.target.checked
+                              ? {
+                                  allDay: true,
+                                  startDate: berlinIso(berlinLocal(entry.startDate).slice(0, 10))!,
+                                  endDate: entry.endDate && berlinIso(berlinLocal(entry.endDate).slice(0, 10))!,
+                                }
+                              : { allDay: undefined },
+                          )
+                        }
+                      />
+                      All day
+                    </label>
                   </div>
                   <Textarea
                     placeholder="Text"
