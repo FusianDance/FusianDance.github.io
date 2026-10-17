@@ -3,6 +3,14 @@ import { Markdown } from "@/components/markdown";
 import type { Route } from "./+types/about";
 import { about, contact } from "@/lib/data.server";
 import { useDraft } from "@/lib/edit";
+import { seo } from "@/lib/seo";
+
+export const meta: Route.MetaFunction = () =>
+  seo(
+    "/about/",
+    "About",
+    "About Fusian Dance Crew, a dance crew in Munich founded in 2017: our mission, what we do, and how to join.",
+  );
 
 export function loader() {
   return { about, contact };

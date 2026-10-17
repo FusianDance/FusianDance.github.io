@@ -1,6 +1,10 @@
 import { Markdown } from "@/components/markdown";
 import type { Route } from "./+types/privacy";
 import { privacy } from "@/lib/data.server";
+import { seo } from "@/lib/seo";
+
+export const meta: Route.MetaFunction = () =>
+  seo("/privacy/", "Privacy Policy", "How the Fusian Dance Crew website handles your data.");
 
 export function loader() {
   return { privacy };

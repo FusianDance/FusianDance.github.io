@@ -2,12 +2,34 @@ import { PostCard } from "@/components/post.card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { UpcomingAnnouncements } from "@/components/upcoming-announcements";
 import type { Route } from "./+types/home";
-import { announcements, posts } from "@/lib/data.server";
+import { announcements, contact, posts } from "@/lib/data.server";
+import { SITE, seo } from "@/lib/seo";
 import { useLiveContent } from "@/lib/edit";
 
 export function loader() {
-  return { announcements, posts, buildTime: Date.now() };
+  return { announcements, posts, contact, buildTime: Date.now() };
 }
+
+const description =
+  "Fusian Dance Crew is a dance crew in Munich, founded in 2017. See our latest posts and upcoming events, and find out how to join.";
+
+export const meta: Route.MetaFunction = ({ loaderData }) => [
+  ...seo("/", "Fusian Dance Crew – Dance Crew in Munich", description),
+  // Keep in line with what the site shows (about page, contact info).
+  {
+    "script:ld+json": {
+      "@context": "https://schema.org",
+      "@type": "DanceGroup",
+      name: "Fusian Dance Crew",
+      url: SITE,
+      description,
+      foundingDate: "2017",
+      email: loaderData?.contact.email,
+      address: { "@type": "PostalAddress", addressLocality: "Munich", addressCountry: "DE" },
+      sameAs: [loaderData?.contact.instagram],
+    },
+  },
+];
 
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { announcements, posts, buildTime } = useLiveContent(loaderData);
@@ -19,7 +41,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           Fusian Dance Crew
         </h1>
         <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
-          Where passion meets rhythm. Join our dance crew and express yourself through the art of movement.
+          A dance crew in Munich since 2017. Where passion meets rhythm: join us and express yourself through the art of
+          movement.
         </p>
       </section>
 
