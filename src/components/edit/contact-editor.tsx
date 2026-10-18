@@ -2,7 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { updateDraft, type Draft } from "@/lib/edit";
+import { updateDraft, type Draft } from "@/lib/edit/session";
 import type { Contact } from "@/lib/models/contact";
 
 type Training = Contact["trainingHours"][number];

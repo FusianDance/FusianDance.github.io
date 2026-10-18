@@ -4,7 +4,7 @@ import { PostCard } from "@/components/post.card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { postUrl, type PostEntry } from "@/lib/content";
-import { updateDraft, type Draft } from "@/lib/edit";
+import { updateDraft, type Draft } from "@/lib/edit/session";
 
 const setPosts = (fn: (list: PostEntry[]) => PostEntry[]) => updateDraft((d) => ({ ...d, posts: fn(d.posts) }));
 

@@ -1,7 +1,9 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import { pages } from "./lib/data.server";
+import { FlaggedPages } from "./lib/models/nav-item";
 
-// Flagged routes only exist when FEATURE_<KEY>=true, so disabled pages are neither prerendered nor deployed.
-// Keep in sync with NavItems in src/lib/models/nav-item.ts.
+// Flagged routes only exist when enabled in data/pages.yml (or FEATURES), so disabled pages are neither
+// prerendered nor deployed.
 export default [
   index("routes/home.tsx"),
   route("about", "routes/about.tsx"),
@@ -9,5 +11,5 @@ export default [
   route("gallery", "routes/gallery.tsx"),
   route("edit/contact", "routes/edit-contact.tsx"),
   route("privacy", "routes/privacy.tsx"),
-  ...(process.env.FEATURE_AUDITION === "true" ? [route("audition", "routes/audition.tsx")] : []),
+  ...FlaggedPages.filter((page) => pages.includes(page.key)).map((page) => route(page.appRoute.slice(1), page.file)),
 ] satisfies RouteConfig;

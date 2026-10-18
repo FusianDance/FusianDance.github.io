@@ -11,11 +11,6 @@ on:
       - ".github/workflows/deploy.yml"
       - ".github/workflows/build.yml"
   workflow_dispatch:
-    inputs:
-      additional_build_env:
-        description: 'e.g. Feature flags like "FEATURE_AUDITION=true FEATURE_STH=false"'
-        default: ""
-        type: string
   workflow_call:
     inputs:
       ref:
@@ -31,44 +26,16 @@ permissions:
   id-token: write
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    environment:
-      name: prod
-    outputs:
-      build_env: ${{ steps.save-env.outputs.build_env }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
-
-      - name: Save build env config
-        id: save-env
-        run: |
-          # use either the input or if empty, the last saved env var
-          newConfig="${{inputs.additional_build_env || vars.LAST_DEPLOY_ENV}}"
-          # if the new config is "DELETE", we clear the saved config
-          if [ "$newConfig" == "DELETE" ]; then
-            newConfig=""
-          fi
-
-          echo "build_env=$newConfig" >> $GITHUB_OUTPUT
-          echo "**Additional Build Environment Variables:**" >> $GITHUB_STEP_SUMMARY
-          echo "$newConfig" >> $GITHUB_STEP_SUMMARY
-
   build:
-    needs: setup
     uses: ./.github/workflows/build.yml
     with:
       ref: ${{ inputs.ref }}
-      additional_build_env: ${{ needs.setup.outputs.build_env }}
 
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: prod
-    needs: [setup, build]
+    needs: [build]
 
     steps:
       - name: Checkout code
@@ -104,13 +71,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ needs.setup.outputs.build_env }}" ]; then
-            echo "## 🎛️ Additional Build Environment Variables Used" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "${{ needs.setup.outputs.build_env }}" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          fi
 
       - name: Release
         uses: softprops/action-gh-release@v3
@@ -120,5 +80,3 @@ jobs:
           generate_release_notes: true
           body: |
             🚀 Deployed to GitHub Pages
-
-            Feature Flags: ${{ needs.setup.outputs.build_env }}

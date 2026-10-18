@@ -1,0 +1,4 @@
+# Pages that can be switched on and off (edit mode: the on/off button on the page's navbar entry).
+# A disabled page isn't built or deployed. Locally, FEATURES=audition,... overrides this file.
+
+audition: false

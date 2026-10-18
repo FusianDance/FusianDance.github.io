@@ -2,11 +2,11 @@ import { Link } from "react-router";
 import { type NavItem, NavItems } from "@/lib/models/nav-item";
 import type { Contact } from "@/lib/models/contact";
 import { FusianIcon } from "@/components/fusian.icon";
-import { login, useDraft } from "@/lib/edit";
+import { login, useDraft, useLiveContent } from "@/lib/edit/session";
 
 export function Footer(props: { contact: Contact }) {
   const draft = useDraft();
-  const contact = draft?.contact ?? props.contact;
+  const { contact } = useLiveContent(props);
   return (
     <footer className="border-t bg-background">
       <div className="flex w-full flex-row flex-wrap gap-8 px-4 py-8 md:justify-around">

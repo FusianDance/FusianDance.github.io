@@ -4,7 +4,7 @@ import { UpcomingAnnouncements } from "@/components/upcoming-announcements";
 import type { Route } from "./+types/home";
 import { announcements, contact, posts } from "@/lib/data.server";
 import { SITE, seo } from "@/lib/seo";
-import { useLiveContent } from "@/lib/edit";
+import { useLiveContent } from "@/lib/edit/session";
 
 export function loader() {
   return { announcements, posts, contact, buildTime: Date.now() };

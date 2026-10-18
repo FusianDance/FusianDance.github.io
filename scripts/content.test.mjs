@@ -3,7 +3,16 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parse } from "yaml";
 import { execFileSync } from "node:child_process";
-import { berlinIso, berlinLocal, gitBlobSha, postUrl, toAnnouncements, toPosts, toYaml } from "../src/lib/content.ts";
+import {
+  berlinIso,
+  berlinLocal,
+  gitBlobSha,
+  postUrl,
+  toAnnouncements,
+  toPages,
+  toPosts,
+  toYaml,
+} from "../src/lib/content.ts";
 
 test("berlinIso", () => {
   assert.equal(berlinIso("2025-07-01 19:00"), "2025-07-01T19:00:00+02:00");
@@ -76,13 +85,16 @@ test("the real announcements load", () => {
 });
 
 test("toYaml keeps the header comment and round-trips the real data files", () => {
-  for (const file of ["data/announcements.yml", "data/insta-posts.yml", "data/contact.yml"]) {
+  for (const file of ["data/announcements.yml", "data/insta-posts.yml", "data/contact.yml", "data/pages.yml"]) {
     const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
     assert.equal(toYaml(text, parse(text)), text, `${file} must not be reformatted by a no-op save`);
   }
   const out = toYaml("# header\n\n- url: a\n", [{ url: "b" }, { url: "c" }]);
   assert.match(out, /^# header\n/);
   assert.deepEqual(parse(out), [{ url: "b" }, { url: "c" }]);
+  // header directly above the first entry (no blank line): kept, followed by a blank line from then on
+  assert.equal(toYaml("# header\naudition: false\n", { audition: true }), "# header\n\naudition: true\n");
+  assert.equal(toYaml("# header\n- url: a\n", [{ url: "b" }]), "# header\n\n- url: b\n");
   assert.deepEqual(parse(toYaml("# only a comment\n", [{ url: "u" }])), [{ url: "u" }]);
   assert.doesNotMatch(toYaml("", [{ startDate: "d", endDate: undefined }]), /endDate/);
 });
@@ -91,4 +103,16 @@ test("gitBlobSha matches git hash-object", async () => {
   const file = "data/announcements.yml";
   const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
   assert.equal(await gitBlobSha(text), execFileSync("git", ["hash-object", file], { encoding: "utf8" }).trim());
+});
+
+test("toPages: file unless FEATURES is set, unknown or non-boolean entries throw", () => {
+  const known = ["audition"];
+  assert.deepEqual(toPages({ audition: true }, known), ["audition"]);
+  assert.deepEqual(toPages({ audition: false }, known), []);
+  assert.deepEqual(toPages({ audition: false }, known, " audition ,"), ["audition"]);
+  assert.deepEqual(toPages({ audition: true }, known, ""), []);
+  assert.deepEqual(toPages(parse(readFileSync("data/pages.yml", "utf8")), known), []);
+  assert.throws(() => toPages({ audtion: true }, known), /unknown page "audtion"/);
+  assert.throws(() => toPages({}, known, "audition,nope"), /unknown page "nope"/);
+  assert.throws(() => toPages({ audition: "yes" }, known), /true or false/);
 });

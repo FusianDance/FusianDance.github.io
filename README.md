@@ -38,7 +38,7 @@ npm run dev
 
 ## 🛠️ Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (edit mode does not touch GitHub here, see [Testing edit mode locally](#testing-edit-mode-locally))
 - `npm run build` - Build the static site into `build/client/`
 - `npm run typecheck` - Generate route types and run the TypeScript check
 - `npm run lint` - Run ESLint to check code quality
@@ -84,12 +84,13 @@ Site content lives in `data/` as YAML and is read at build time. Edit it with th
 | `data/announcements.yml` | `title`, `content`, `startDate`, optional `endDate` and `allDay`. Dates are ISO 8601 with offset, e.g. `2025-10-20T22:00:00+02:00` |
 | `data/insta-posts.yml`   | `url` only, newest first. Use the canonical form `https://www.instagram.com/p/<id>/` or `https://www.instagram.com/reel/<id>/`     |
 | `data/about.md`          | The about page, GitHub flavored Markdown. Photos go in `public/uploads/`                                                           |
+| `data/audition.md`       | Intro text of the audition page, same format (the Google Form stays in code)                                                       |
 | `data/contact.yml`       | Contact info and training hours                                                                                                    |
 | `data/privacy.md`        | The privacy policy at `/privacy` (linked in the footer and from the Google login). Hand edits only                                 |
 
 ## 🖊️ Edit Mode (no git needed)
 
-Crew members edit the site right on the site. The footer has a **Log in** button. After login, `/events`, `/gallery` and `/about` turn into editors, the navbar gets a Contact entry (`/edit/contact`, while editing) for the contact info and training hours, and floating icon buttons appear (hover for their names): **Log out** on the left, and on the right **Discard changes**, an **Edit/Preview** toggle (Preview shows the normal pages with your unsaved changes) and **Save**. The about page is edited like a document (toolbar for headings, bold, lists, highlighted note, link and photos) and saved as Markdown: paste a link onto selected text to link it, and paste, drop or add photos right where they should go (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept in the browser, so they survive a reload or a new login.
+Crew members edit the site right on the site. The footer has a **Log in** button. After login, `/events`, `/gallery`, `/about` and `/audition` turn into editors, the navbar gets a Contact entry (`/edit/contact`, while editing) for the contact info and training hours, and floating icon buttons appear (hover for their names): **Log out** on the left, and on the right **Discard changes**, an **Edit/Preview** toggle (Preview shows the normal pages with your unsaved changes) and **Save**. The about and audition texts are edited like a document (toolbar for headings, bold, lists, highlighted note, link and photos) and saved as Markdown: paste a link onto selected text to link it, and paste, drop or add photos right where they should go (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept in this browser across reloads, a new login and closing the tab, until you Save or Discard them.
 
 There is no server of our own:
 
@@ -102,6 +103,17 @@ Log in → Google's account picker ("Sign in with Google", pick any of your Goog
 ```
 
 Each member logs in with their own Google account. Only the emails in the `ALLOWED_EMAILS` script property may edit; add or remove people there ([how](docs/edit-mode-setup.md#changing-things-later)).
+
+### Testing edit mode locally
+
+`npm run dev` picks where edit mode loads from and saves to with `EDIT_TARGET`. A red banner on every page tells you when it is not the real site.
+
+- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** only stores your edits in this browser (so **Discard changes** goes back to them, also after a reload); no files change.
+- `EDIT_TARGET=local npm run dev`: like `browser`, but **Save** writes the changed `data/` files and new photos into your working tree. Review them with `git diff`.
+- `EDIT_TARGET=feat/my-branch npm run dev`: real Google login, loads from and commits to that (pushed) branch instead of `main`. Nothing is deployed.
+- `EDIT_TARGET=main npm run dev`: the live behaviour, **Save** commits to `main` and deploys the site. Only use it on purpose.
+
+In `browser` mode, the edits saved in this browser are dropped when the files change (checkout, pull, hand edit). Builds always use `main`.
 
 Setup, maintenance and troubleshooting (GitHub App, Google login, Apps Script): [docs/edit-mode-setup.md](docs/edit-mode-setup.md).
 
@@ -126,7 +138,7 @@ npm run build
 
 The static files will be generated in the `build/client` directory.
 
-Feature flags are `FEATURE_<KEY>=true` environment variables read at build time (and in dev), e.g. `FEATURE_AUDITION=true npm run build`. A flagged route is defined conditionally in `src/routes.ts` with a matching entry in `src/lib/models/nav-item.ts`; disabled pages are not built at all.
+Page flags live in `data/pages.yml` (page key → `true`/`false`, e.g. `audition: false`); a disabled page is not built or prerendered. Set `FEATURES` to override the file locally with a comma-separated list of enabled pages, e.g. `FEATURES=audition npm run dev` (`FEATURES=` enables none). Flaggable pages are registered in `FlaggedPages` in `src/lib/models/nav-item.ts`. In edit mode the navbar shows every flagged page with an on/off button; Save commits `data/pages.yml` and the push redeploys.
 
 ## 🔄 CI/CD Workflows
 

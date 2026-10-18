@@ -1,7 +1,7 @@
 import { EventsTimeline } from "@/components/events-timeline";
 import type { Route } from "./+types/events";
 import { announcements } from "@/lib/data.server";
-import { useEditDraft, useLiveContent } from "@/lib/edit";
+import { useEditDraft, useLiveContent } from "@/lib/edit/session";
 import { AnnouncementsEditor } from "@/components/edit/announcements-editor";
 import { seo } from "@/lib/seo";
 

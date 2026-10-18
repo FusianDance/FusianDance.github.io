@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tip } from "@/components/edit/tip";
 import {
+  DEPLOY_DETAILS_URL,
+  DEPLOY_TEXT,
+  discard,
   finishLogin,
   isDirty,
   login,
@@ -13,20 +16,20 @@ import {
   save,
   setPreview,
   startSession,
-  updateDraft,
   useDeploy,
+  useLoggedIn,
   useSession,
-  useToken,
-} from "@/lib/edit";
+} from "@/lib/edit/session";
+import { LOCAL, PAGES_SAVED_NOTE, TARGET_NOTE } from "@/lib/edit/target";
 
 /** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
-  const token = useToken();
+  const loggedIn = useLoggedIn();
   const session = useSession();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [commit, setCommit] = useState<string | null>(null);
-  const deploy = useDeploy(!!session, commit);
+  const deploy = useDeploy(!!session && !LOCAL, commit);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,10 +47,10 @@ export function EditBar() {
   }, [navigate]);
 
   useEffect(() => {
-    if (token && !session) startSession(token).catch((e: Error) => setMessage(e.message));
-  }, [token, session]);
+    if (loggedIn && !session) startSession().catch((e: Error) => setMessage(e.message));
+  }, [loggedIn, session]);
 
-  if (!token && !session && !message) return null;
+  if (!loggedIn && !session && !message) return null;
 
   const dirty = !!session && isDirty(session);
   const blocker = session && problem(session.draft);
@@ -61,15 +64,16 @@ export function EditBar() {
   function cancel() {
     if (!confirm("Discard all unsaved changes?")) return;
     setMessage(null);
-    updateDraft(() => session!.base);
+    discard();
   }
 
   async function onSave() {
     setSaving(true);
     setMessage(null);
     try {
-      setCommit(await save(token!, session!));
-      setMessage("Saved.");
+      const { commit, pagesChanged } = await save();
+      setCommit(commit);
+      setMessage(pagesChanged ? `Saved. ${PAGES_SAVED_NOTE}` : "Saved.");
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -79,12 +83,12 @@ export function EditBar() {
 
   let status = message ?? blocker ?? (dirty ? "Unsaved changes" : "No changes yet");
   if (!session && !message) status = "Loading content…";
-  if (!token && session) status = "Login expired. Your changes are kept, log in again to save them.";
+  if (!loggedIn && session) status = "Login expired. Your changes are kept, log in again to save them.";
 
   // Left: login state. Right: status and the draft's actions.
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex items-end justify-between gap-2 *:pointer-events-auto *:shadow-lg">
-      {token ? (
+      {loggedIn ? (
         <Tip label="Log out">
           <Button variant="outline" size="icon" onClick={onLogout} disabled={saving}>
             <LogOut />
@@ -98,24 +102,20 @@ export function EditBar() {
         </Tip>
       )}
       <div className="flex max-w-xl flex-wrap items-center justify-end gap-3 rounded-lg border bg-background p-3">
+        {TARGET_NOTE && <p className="basis-full text-sm font-medium text-primary">{TARGET_NOTE}</p>}
         {deploy && (
           <p className="flex basis-full items-center gap-2 text-sm" aria-live="polite">
             {deploy === "running" ? (
               <>
                 <LoaderCircle className="size-4 shrink-0 animate-spin" />
-                Updating the site (about 2 minutes). Until then it shows the old content.
+                {DEPLOY_TEXT.running}
               </>
             ) : (
               <>
                 <TriangleAlert className="size-4 shrink-0 text-destructive" />
                 <span>
-                  The last site update failed, so it shows old content.{" "}
-                  <a
-                    className="underline"
-                    href="https://github.com/FusianDance/FusianDance.github.io/actions/workflows/deploy.yml"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  {DEPLOY_TEXT.failed}{" "}
+                  <a className="underline" href={DEPLOY_DETAILS_URL} target="_blank" rel="noreferrer">
                     Details
                   </a>
                 </span>
@@ -151,13 +151,13 @@ export function EditBar() {
               </Tip>
             </ToggleGroup>
             <Tip label={saving ? "Saving…" : "Save"}>
-              <Button size="icon" onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
+              <Button size="icon" onClick={onSave} disabled={!loggedIn || !dirty || !!blocker || saving}>
                 <Save />
               </Button>
             </Tip>
           </div>
         ) : (
-          !token && (
+          !loggedIn && (
             <Button variant="ghost" onClick={() => setMessage(null)}>
               Close
             </Button>

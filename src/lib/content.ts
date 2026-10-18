@@ -1,6 +1,6 @@
 // Content model shared by the build (data.server.ts) and the edit mode (edit.ts).
 // Only relative imports: scripts/content.test.mjs runs this file with plain node.
-import { parseDocument, type Document } from "yaml";
+import { isCollection, isPair, parseDocument, type Document } from "yaml";
 import type { Announcement } from "./models/announcement";
 import type { InstaPost } from "./models/insta-post";
 
@@ -75,9 +75,31 @@ export function toPosts(entries: PostEntry[]): InstaPost[] {
   });
 }
 
+/** Keys of the enabled flagged pages: FEATURES ("audition,other", "" = none) if set, else data/pages.yml.
+ * known: the keys of FlaggedPages. */
+export function toPages(entries: Record<string, boolean>, known: string[], features?: string): string[] {
+  for (const [key, on] of Object.entries(entries)) {
+    if (typeof on !== "boolean") throw new Error(`data/pages.yml: "${key}" must be true or false`);
+  }
+  const keys =
+    features == null
+      ? Object.keys(entries).filter((key) => entries[key])
+      : features
+          .split(",")
+          .map((key) => key.trim())
+          .filter(Boolean);
+  const unknown = [...Object.keys(entries), ...keys].find((key) => !known.includes(key));
+  if (unknown) throw new Error(`data/pages.yml or FEATURES: unknown page "${unknown}" (see FlaggedPages)`);
+  return keys;
+}
+
 /** Replace the content of a YAML data file, keeping its header comment. */
 export function toYaml(text: string, entries: unknown) {
   const doc: Document = parseDocument(text);
+  // Without a blank line below it, the header belongs to the first entry, which gets replaced: keep it.
+  const first = isCollection(doc.contents) ? doc.contents.items[0] : null;
+  doc.commentBefore ??=
+    ((isPair(first) ? first.key : first) as { commentBefore?: string } | null)?.commentBefore ?? null;
   doc.contents = doc.createNode(entries);
   return doc.toString({ lineWidth: 0 });
 }

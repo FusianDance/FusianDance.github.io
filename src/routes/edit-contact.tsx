@@ -1,6 +1,6 @@
 import { ContactEditor } from "@/components/edit/contact-editor";
 import { Button } from "@/components/ui/button";
-import { login, useDraft, useEditDraft } from "@/lib/edit";
+import { login, useDraft, useEditDraft } from "@/lib/edit/session";
 
 export const meta = () => [{ title: "Edit contact – Fusian Dance Crew" }, { name: "robots", content: "noindex" }];
 

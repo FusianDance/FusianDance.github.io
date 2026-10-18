@@ -124,7 +124,7 @@
   }
 }
 
-/* Used by the read-only Markdown renderer. The about editor (about-editor.tsx) mirrors headings and notes with line classes. */
+/* Used by the read-only Markdown renderer. The Markdown editor (markdown-editor.tsx) mirrors headings and notes with line classes. */
 @layer components {
   .rich-text {
     & h1 {
