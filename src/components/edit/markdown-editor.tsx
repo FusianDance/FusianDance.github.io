@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Tip } from "@/components/edit/tip";
+import { formClass, formEmbed } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { updateDraft, type Draft } from "@/lib/edit/session";
@@ -94,6 +95,26 @@ class ImageWidget extends WidgetType {
   }
 }
 
+// A Google Form as image (![title](form link)), shown as the form like on the page.
+class FormWidget extends WidgetType {
+  constructor(
+    readonly src: string,
+    readonly title: string,
+  ) {
+    super();
+  }
+  eq(other: FormWidget) {
+    return other.src === this.src && other.title === this.title;
+  }
+  toDOM() {
+    const iframe = document.createElement("iframe");
+    iframe.src = this.src;
+    iframe.title = this.title;
+    iframe.className = `my-2 ${formClass}`;
+    return iframe;
+  }
+}
+
 class BulletWidget extends WidgetType {
   eq() {
     return true;
@@ -149,12 +170,10 @@ function preview(view: EditorView, show: (src: string) => string): DecorationSet
         const url = node.node.getChild("URL");
         if (url && marks.length > 1) {
           const alt = doc.sliceString(marks[0].to, marks[1].from);
-          decos.push(
-            Decoration.replace({ widget: new ImageWidget(show(doc.sliceString(url.from, url.to)), alt) }).range(
-              from,
-              to,
-            ),
-          );
+          const src = doc.sliceString(url.from, url.to);
+          const form = formEmbed(src);
+          const widget = form ? new FormWidget(form, alt) : new ImageWidget(show(src), alt);
+          decos.push(Decoration.replace({ widget }).range(from, to));
           return false;
         }
       }
@@ -407,7 +426,8 @@ export function MarkdownEditor({ draft, field }: { draft: Draft; field: "about" 
         <p className="text-sm text-muted-foreground">
           The text is Markdown: the line you're on shows it, e.g. <code>## </code> for a heading, <code>- </code> for a
           list, <code>&gt; </code> for a highlighted note, <code>**bold**</code>. Drop, paste or add photos (shrunk to
-          1600px, uploaded on Save). Paste a link onto selected text to link it.
+          1600px, uploaded on Save). Paste a link onto selected text to link it. <code>![title](Google Form link)</code>{" "}
+          shows the form.
         </p>
       </div>
     </div>
