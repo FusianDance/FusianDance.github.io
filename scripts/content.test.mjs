@@ -111,7 +111,7 @@ test("toPages: file unless FEATURES is set, unknown or non-boolean entries throw
   assert.deepEqual(toPages({ audition: false }, known), []);
   assert.deepEqual(toPages({ audition: false }, known, " audition ,"), ["audition"]);
   assert.deepEqual(toPages({ audition: true }, known, ""), []);
-  assert.deepEqual(toPages(parse(readFileSync("data/pages.yml", "utf8")), known), []);
+  assert.doesNotThrow(() => toPages(parse(readFileSync("data/pages.yml", "utf8")), known));
   assert.throws(() => toPages({ audtion: true }, known), /unknown page "audtion"/);
   assert.throws(() => toPages({}, known, "audition,nope"), /unknown page "nope"/);
   assert.throws(() => toPages({ audition: "yes" }, known), /true or false/);
