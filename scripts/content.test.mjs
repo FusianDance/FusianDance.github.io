@@ -85,13 +85,16 @@ test("the real announcements load", () => {
 });
 
 test("toYaml keeps the header comment and round-trips the real data files", () => {
-  for (const file of ["data/announcements.yml", "data/insta-posts.yml", "data/contact.yml"]) {
+  for (const file of ["data/announcements.yml", "data/insta-posts.yml", "data/contact.yml", "data/pages.yml"]) {
     const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
     assert.equal(toYaml(text, parse(text)), text, `${file} must not be reformatted by a no-op save`);
   }
   const out = toYaml("# header\n\n- url: a\n", [{ url: "b" }, { url: "c" }]);
   assert.match(out, /^# header\n/);
   assert.deepEqual(parse(out), [{ url: "b" }, { url: "c" }]);
+  // header directly above the first entry (no blank line): kept, followed by a blank line from then on
+  assert.equal(toYaml("# header\naudition: false\n", { audition: true }), "# header\n\naudition: true\n");
+  assert.equal(toYaml("# header\n- url: a\n", [{ url: "b" }]), "# header\n\n- url: b\n");
   assert.deepEqual(parse(toYaml("# only a comment\n", [{ url: "u" }])), [{ url: "u" }]);
   assert.doesNotMatch(toYaml("", [{ startDate: "d", endDate: undefined }]), /endDate/);
 });

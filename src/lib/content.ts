@@ -1,6 +1,6 @@
 // Content model shared by the build (data.server.ts) and the edit mode (edit.ts).
 // Only relative imports: scripts/content.test.mjs runs this file with plain node.
-import { parseDocument, type Document } from "yaml";
+import { isCollection, isPair, parseDocument, type Document } from "yaml";
 import type { Announcement } from "./models/announcement";
 import type { InstaPost } from "./models/insta-post";
 
@@ -96,6 +96,10 @@ export function toPages(entries: Record<string, boolean>, known: string[], featu
 /** Replace the content of a YAML data file, keeping its header comment. */
 export function toYaml(text: string, entries: unknown) {
   const doc: Document = parseDocument(text);
+  // Without a blank line below it, the header belongs to the first entry, which gets replaced: keep it.
+  const first = isCollection(doc.contents) ? doc.contents.items[0] : null;
+  doc.commentBefore ??=
+    ((isPair(first) ? first.key : first) as { commentBefore?: string } | null)?.commentBefore ?? null;
   doc.contents = doc.createNode(entries);
   return doc.toString({ lineWidth: 0 });
 }
