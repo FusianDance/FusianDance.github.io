@@ -12,3 +12,12 @@ export const TARGET_NOTE =
       : TARGET === "local"
         ? "Local mode: Save writes data/ and public/uploads/ in your working tree."
         : `Branch mode: Save commits to ${TARGET}, not main.`;
+/** Added to "Saved." when the Save switched pages on or off: when that takes effect. */
+export const PAGES_SAVED_NOTE =
+  TARGET === "main"
+    ? "New or hidden pages show after the site update."
+    : TARGET === "browser"
+      ? "Page switches don't change what's built in browser mode: turn pages on or off in data/pages.yml."
+      : TARGET === "local"
+        ? "The dev server restarts to pick up the page switch."
+        : `Page switches take effect once ${TARGET} is deployed.`;

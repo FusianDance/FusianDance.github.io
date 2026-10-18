@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, type Plugin } from "vite";
@@ -12,6 +12,20 @@ function localFiles(target: string): Plugin {
     name: "edit-local-files",
     apply: "serve",
     configureServer(server) {
+      // Routes and content are read with fs at startup, so Vite doesn't track
+      // them: restart when data/ changes (debounced, local Save writes several files).
+      const dataDir = join(process.cwd(), "data");
+      let timer: NodeJS.Timeout | undefined;
+      const onChange = (file: string) => {
+        if (!file.startsWith(dataDir + sep)) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          server.config.logger.info(`${relative(process.cwd(), file)} changed, restarting`);
+          void server.restart();
+        }, 300);
+      };
+      server.watcher.add(dataDir);
+      for (const event of ["add", "change", "unlink"]) server.watcher.on(event, onChange);
       server.middlewares.use("/__edit", async (req, res) => {
         try {
           const path = decodeURIComponent((req.url ?? "").split("?")[0]);

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tip } from "@/components/edit/tip";
 import { useToken } from "@/lib/edit/auth";
-import { useDeploy } from "@/lib/edit/deploy";
+import { useDeploy, WORKFLOW } from "@/lib/edit/deploy";
 import {
   discard,
   finishLogin,
@@ -18,7 +18,7 @@ import {
   startSession,
   useSession,
 } from "@/lib/edit/session";
-import { TARGET, TARGET_NOTE } from "@/lib/edit/target";
+import { LOCAL, PAGES_SAVED_NOTE, TARGET, TARGET_NOTE } from "@/lib/edit/target";
 
 /** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
@@ -27,7 +27,7 @@ export function EditBar() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [commit, setCommit] = useState<string | null>(null);
-  const deploy = useDeploy(!!session && TARGET === "main", commit); // only main deploys
+  const deploy = useDeploy(!!session && !LOCAL, commit);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,9 +68,11 @@ export function EditBar() {
   async function onSave() {
     setSaving(true);
     setMessage(null);
+    const { draft, saved } = session!;
+    const pagesChanged = JSON.stringify(draft.pages) !== JSON.stringify(saved.content.pages);
     try {
       setCommit(await save());
-      setMessage("Saved.");
+      setMessage(pagesChanged ? `Saved. ${PAGES_SAVED_NOTE}` : "Saved.");
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -105,16 +107,20 @@ export function EditBar() {
             {deploy === "running" ? (
               <>
                 <LoaderCircle className="size-4 shrink-0 animate-spin" />
-                Updating the site (about 2 minutes). Until then it shows the old content.
+                {TARGET === "main"
+                  ? "Updating the site (about 2 minutes). Until then it shows the old content."
+                  : `Building ${TARGET} (CI check).`}
               </>
             ) : (
               <>
                 <TriangleAlert className="size-4 shrink-0 text-destructive" />
                 <span>
-                  The last site update failed, so it shows old content.{" "}
+                  {TARGET === "main"
+                    ? "The last site update failed, so it shows old content."
+                    : `The last build of ${TARGET} failed.`}{" "}
                   <a
                     className="underline"
-                    href="https://github.com/FusianDance/FusianDance.github.io/actions/workflows/deploy.yml"
+                    href={`https://github.com/FusianDance/FusianDance.github.io/actions/workflows/${WORKFLOW}`}
                     target="_blank"
                     rel="noreferrer"
                   >
