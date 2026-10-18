@@ -14,7 +14,7 @@ import { FusianIcon } from "@/components/fusian.icon";
 import { Eye, EyeOff, Menu, X } from "lucide-react";
 import { FlaggedPages, NavItems, type NavItem } from "@/lib/models/nav-item";
 import { updateDraft, useEditDraft } from "@/lib/edit/session";
-import { TARGET, TARGET_NOTE } from "@/lib/edit/target";
+import { pageToggleHint, TARGET_NOTE } from "@/lib/edit/target";
 
 // Edit-only page, in the nav while editing.
 const EDIT_ITEMS: NavItem[] = [{ navTitle: "Contact", appRoute: "/edit/contact" }];
@@ -24,13 +24,7 @@ type Item = NavItem & { key?: string };
 /** Turns a flagged page on or off in the draft; the deploy after Save builds or drops it. */
 function PageToggle({ item, on, className }: { item: Item; on: boolean; className: string }) {
   return (
-    <Tip
-      label={
-        TARGET === "browser"
-          ? `${item.navTitle} page: in browser mode, turn pages on or off in data/pages.yml`
-          : `${item.navTitle} page online (after Save and deploy)`
-      }
-    >
+    <Tip label={pageToggleHint(item.navTitle)}>
       <Toggle
         variant="outline"
         className={cn("size-6 min-w-6 bg-background px-0 [&_svg:not([class*='size-'])]:size-3.5", className)}

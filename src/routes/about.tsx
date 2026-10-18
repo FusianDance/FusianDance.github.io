@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Markdown } from "@/components/markdown";
 import type { Route } from "./+types/about";
 import { about, contact } from "@/lib/data.server";
-import { useDraft, useEditDraft } from "@/lib/edit/session";
+import { useEditDraft, useLiveContent } from "@/lib/edit/session";
 import { seo } from "@/lib/seo";
 
 export const meta: Route.MetaFunction = () =>
@@ -22,7 +22,7 @@ export function loader() {
 }
 
 export default function AboutPage({ loaderData }: Route.ComponentProps) {
-  const draft = useDraft();
+  const { about, contact, uploads } = useLiveContent(loaderData);
   const editDraft = useEditDraft();
   if (editDraft) {
     return (
@@ -31,12 +31,10 @@ export default function AboutPage({ loaderData }: Route.ComponentProps) {
       </Suspense>
     );
   }
-  const about = draft?.about ?? loaderData.about;
-  const contact = draft?.contact ?? loaderData.contact;
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <Markdown text={about} images={draft?.uploads} />
+        <Markdown text={about} images={uploads} />
         <div className="mt-8 flex flex-col">
           <div className="flex flex-wrap gap-4">
             <h3 className="mb-2 font-medium">Email</h3>

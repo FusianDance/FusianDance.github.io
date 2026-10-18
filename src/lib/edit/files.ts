@@ -39,6 +39,9 @@ export type ContentStore = {
   save(draft: Draft, saved: Saved): Promise<{ saved: Saved; commit?: string }>;
 };
 
+/** Both loaded from the same files (a draft backup or browser-mode copy still fits what's there now). */
+export const sameFiles = (a: Saved, b: Saved) => KEYS.every((key) => a.shas[key] === b.shas[key]);
+
 type File = { text: string; sha: string };
 
 export async function loadFiles(read: (key: FileKey) => Promise<File>): Promise<Saved> {

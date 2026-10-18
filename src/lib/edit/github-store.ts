@@ -1,10 +1,11 @@
 // The repo on GitHub, branch TARGET (main in production): reads files with the Contents API and saves all
 // changes as one commit with the Git Data API.
-import { clearToken, getToken } from "./auth";
+import { clearLogin, getToken } from "./auth";
 import { changes, FILES, loadFiles, savedAfter, type ContentStore, type FileKey } from "./files";
 import { TARGET } from "./target";
 
-export const API = "https://api.github.com/repos/FusianDance/FusianDance.github.io";
+export const REPO = "FusianDance/FusianDance.github.io";
+export const API = `https://api.github.com/repos/${REPO}`;
 
 async function gh<T>(path: string, body?: { method: string; json: unknown }): Promise<T> {
   const token = getToken();
@@ -15,7 +16,7 @@ async function gh<T>(path: string, body?: { method: string; json: unknown }): Pr
     headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
     body: body && JSON.stringify(body.json),
   });
-  if (res.status === 401) clearToken(); // expired: the bar offers to log in again, the draft stays
+  if (res.status === 401) clearLogin(); // expired: the bar offers to log in again, the draft stays
   if (!res.ok) {
     const { message } = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(`GitHub ${res.status}: ${message}`);

@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import { API } from "./github-store";
+import { API, REPO } from "./github-store";
 import { TARGET } from "./target";
 
 /** main deploys with deploy.yml. A branch (dev) never deploys; its CI build (build.yml) only runs when it has
  * a PR into main, so a missing run is only waited for a minute. */
-export const WORKFLOW = TARGET === "main" ? "deploy.yml" : "build.yml";
+const WORKFLOW = TARGET === "main" ? "deploy.yml" : "build.yml";
+
+/** What the edit bar says about the WORKFLOW run. */
+export const DEPLOY_TEXT =
+  TARGET === "main"
+    ? {
+        running: "Updating the site (about 2 minutes). Until then it shows the old content.",
+        failed: "The last site update failed, so it shows old content.",
+      }
+    : { running: `Building ${TARGET} (CI check).`, failed: `The last build of ${TARGET} failed.` };
+export const DEPLOY_DETAILS_URL = `https://github.com/${REPO}/actions/workflows/${WORKFLOW}`;
 
 /** The WORKFLOW run of `commit` (a sha just saved, whose run may not exist yet), else the latest one on TARGET:
  * "running" until it finished, then "failed" or null. Without auth: the edit token may only touch file contents.

@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Markdown } from "@/components/markdown";
 import { audition } from "@/lib/data.server";
-import { useDraft, useEditDraft } from "@/lib/edit/session";
+import { useEditDraft, useLiveContent } from "@/lib/edit/session";
 import { seo } from "@/lib/seo";
 
 // No ./+types/audition: typegen only knows this route while it is enabled (data/pages.yml).
@@ -18,7 +18,7 @@ export function loader() {
 }
 
 export default function AuditionPage({ loaderData }: { loaderData: ReturnType<typeof loader> }) {
-  const draft = useDraft();
+  const { audition, uploads } = useLiveContent(loaderData);
   const editDraft = useEditDraft();
   if (editDraft) {
     return (
@@ -36,7 +36,7 @@ export default function AuditionPage({ loaderData }: { loaderData: ReturnType<ty
     <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
-          <Markdown text={draft?.audition ?? loaderData.audition} images={draft?.uploads} />
+          <Markdown text={audition} images={uploads} />
         </div>
 
         {/* Google Form Embed */}

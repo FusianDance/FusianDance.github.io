@@ -12,6 +12,11 @@ export const TARGET_NOTE =
       : TARGET === "local"
         ? "Local mode: Save writes data/ and public/uploads/ in your working tree."
         : `Branch mode: Save commits to ${TARGET}, not main.`;
+/** Tooltip of the on/off button on a flagged page's navbar entry. */
+export const pageToggleHint = (title: string) =>
+  TARGET === "browser"
+    ? `${title} page: in browser mode, turn pages on or off in data/pages.yml`
+    : `${title} page online (after Save and deploy)`;
 /** Added to "Saved." when the Save switched pages on or off: when that takes effect. */
 export const PAGES_SAVED_NOTE =
   TARGET === "main"

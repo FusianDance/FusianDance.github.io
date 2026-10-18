@@ -1,21 +1,27 @@
-// Edit mode: the content is edited in memory and Save hands it to the store for TARGET: GitHub (one commit on
-// main, which triggers deploy.yml, or on a branch in dev), the working tree (local) or localStorage (browser).
-// TARGET is fixed at build time, so the bundle only keeps the store it uses.
-// Typing only touches memory. Unsaved edits are backed up to localStorage when the page is left or hidden, so
-// they survive reloads, the login trip to Google and closing the tab.
+// Edit mode's core, and the only module of src/lib/edit the UI imports (besides the mode texts in target.ts).
+// Behind it: the stores (ContentStore in files.ts: GitHub, local files, browser), the login (auth.ts) and the
+// deploy status (deploy.ts). TARGET is fixed at build time, so the bundle only keeps the store it uses.
+// The content is edited in memory and Save hands it to the store: one commit on main (which triggers
+// deploy.yml) or a branch, the working tree (local) or localStorage (browser). Typing only touches memory;
+// unsaved edits are backed up to localStorage when the page is left or hidden, so they survive reloads, the
+// login trip to Google and closing the tab.
 import { useMemo, useSyncExternalStore } from "react";
 import { toAnnouncements, toPosts } from "@/lib/content";
 import type { Announcement } from "@/lib/models/announcement";
+import type { Contact } from "@/lib/models/contact";
 import type { InstaPost } from "@/lib/models/insta-post";
-import { clearToken, finishGoogleLogin, googleLogin } from "./auth";
+import { clearLogin } from "./auth";
 import { browserStore } from "./browser-store";
-import { KEYS, type ContentStore, type Draft, type Saved } from "./files";
+import { sameFiles, type ContentStore, type Draft, type Saved } from "./files";
 import { githubStore } from "./github-store";
 import { localStore } from "./local-store";
+import { readJson, writeJson } from "./storage";
 import { TARGET } from "./target";
 
 export type { Draft } from "./files";
 export { problem } from "./files";
+export { finishLogin, login, useLoggedIn } from "./auth";
+export { DEPLOY_DETAILS_URL, DEPLOY_TEXT, useDeploy } from "./deploy";
 
 const store: ContentStore = TARGET === "browser" ? browserStore : TARGET === "local" ? localStore : githubStore;
 
@@ -73,7 +79,7 @@ export function startSession() {
   loading ??= store.load().then(
     (saved) => {
       const kept = readBackup();
-      if (kept && KEYS.every((key) => kept.saved.shas[key] === saved.shas[key])) {
+      if (kept && sameFiles(kept.saved, saved)) {
         set({ draft: kept.draft, saved: kept.saved, preview: false });
       } else {
         if (kept) dropBackup(); // made on content that changed since (or in another mode)
@@ -88,29 +94,39 @@ export function startSession() {
   return loading;
 }
 
-/** Saves the draft and returns the commit (GitHub) or null. Edits typed while saving stay in the draft. */
+/** Saves the draft. commit: the GitHub commit, if any; pagesChanged: pages were switched on or off, which only
+ * takes effect with the next build. Edits typed while saving stay in the draft. */
 export async function save() {
   const { draft, saved } = session!;
+  const pagesChanged = JSON.stringify(draft.pages) !== JSON.stringify(saved.content.pages);
   const result = await store.save(draft, saved);
   if (session) set({ ...session, saved: result.saved });
   dropBackup();
-  return result.commit ?? null;
+  return { commit: result.commit ?? null, pagesChanged };
 }
 
-/** Shows the draft instead of the build-time content while editing. */
-export function useLiveContent<T extends { announcements?: Announcement[]; posts?: InstaPost[] }>(data: T): T {
+type PageContent = {
+  announcements?: Announcement[];
+  posts?: InstaPost[];
+  about?: string;
+  audition?: string;
+  contact?: Contact;
+};
+
+/** The page's build-time content, or the draft's while a session is open (so Preview shows unsaved edits).
+ * uploads: the unsaved photos the draft's Markdown points to. */
+export function useLiveContent<T extends PageContent>(data: T): T & { uploads?: Record<string, string> } {
   const draft = useDraft();
-  return useMemo(
-    () =>
-      draft
-        ? {
-            ...data,
-            ...(data.announcements && { announcements: toAnnouncements(draft.announcements) }),
-            ...(data.posts && { posts: toPosts(draft.posts) }),
-          }
-        : data,
-    [data, draft],
-  );
+  return useMemo(() => {
+    if (!draft) return data;
+    const live: PageContent & { uploads?: Record<string, string> } = { uploads: draft.uploads };
+    if (data.announcements) live.announcements = toAnnouncements(draft.announcements);
+    if (data.posts) live.posts = toPosts(draft.posts);
+    if (data.about != null) live.about = draft.about;
+    if (data.audition != null) live.audition = draft.audition;
+    if (data.contact) live.contact = draft.contact;
+    return { ...data, ...live };
+  }, [data, draft]);
 }
 
 // ---- unsaved edits across reloads, logins and closed tabs
@@ -120,32 +136,17 @@ const BACKUP_KEY = "fusian-edit-draft";
 type Backup = { target: string; draft: Draft; saved: Saved };
 
 function readBackup() {
-  try {
-    const kept = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null") as Backup | null;
-    return kept?.target === TARGET ? kept : null;
-  } catch {
-    return null;
-  }
+  const kept = readJson<Backup>(BACKUP_KEY);
+  return kept?.target === TARGET ? kept : null;
 }
 
-function dropBackup() {
-  try {
-    localStorage.removeItem(BACKUP_KEY);
-  } catch {
-    // storage blocked: there is no backup
-  }
-}
+const dropBackup = () => writeJson(BACKUP_KEY, null);
 
 /** false if the unsaved edits didn't fit into localStorage (many big photos). Only Save, Discard and Log out
  * remove the backup, so a tab without edits never deletes another tab's. */
 function backup() {
   if (!session || !isDirty(session)) return true;
-  try {
-    localStorage.setItem(BACKUP_KEY, JSON.stringify({ target: TARGET, draft: session.draft, saved: session.saved }));
-    return true;
-  } catch {
-    return false;
-  }
+  return writeJson(BACKUP_KEY, { target: TARGET, draft: session.draft, saved: session.saved } satisfies Backup);
 }
 
 if (typeof window !== "undefined") {
@@ -155,19 +156,13 @@ if (typeof window !== "undefined") {
   });
   window.addEventListener("pagehide", backup);
   document.addEventListener("visibilitychange", () => document.hidden && backup()); // phones skip pagehide
-  try {
-    localStorage.removeItem("fusian-edit-session"); // drafts of the old localStorage-based edit mode
-  } catch {
-    // storage blocked: nothing to clean up
-  }
+  writeJson("fusian-edit-session", null); // drafts of the old localStorage-based edit mode
 }
 
-export const login = googleLogin;
-export const finishLogin = finishGoogleLogin;
-
+/** Ends edit mode: drops the session, unsaved edits and the login. */
 export function logout() {
   loading = null;
   set(null);
   dropBackup();
-  clearToken();
+  clearLogin();
 }
