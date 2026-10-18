@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tip } from "@/components/edit/tip";
 import {
+  dropIfStale,
   finishLogin,
   isDirty,
   login,
@@ -13,6 +14,8 @@ import {
   save,
   setPreview,
   startSession,
+  TARGET,
+  TARGET_NOTE,
   updateDraft,
   useDeploy,
   useSession,
@@ -26,7 +29,7 @@ export function EditBar() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [commit, setCommit] = useState<string | null>(null);
-  const deploy = useDeploy(!!session, commit);
+  const deploy = useDeploy(!!session && TARGET === "main", commit); // only main deploys
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,6 +45,10 @@ export function EditBar() {
       (e: Error) => setMessage(e.message),
     );
   }, [navigate]);
+
+  useEffect(() => {
+    dropIfStale().catch((e: Error) => setMessage(e.message));
+  }, []);
 
   useEffect(() => {
     if (token && !session) startSession(token).catch((e: Error) => setMessage(e.message));
@@ -98,6 +105,7 @@ export function EditBar() {
         </Tip>
       )}
       <div className="flex max-w-xl flex-wrap items-center justify-end gap-3 rounded-lg border bg-background p-3">
+        {TARGET_NOTE && <p className="basis-full text-sm font-medium text-primary">{TARGET_NOTE}</p>}
         {deploy && (
           <p className="flex basis-full items-center gap-2 text-sm" aria-live="polite">
             {deploy === "running" ? (
@@ -150,8 +158,12 @@ export function EditBar() {
                 </ToggleGroupItem>
               </Tip>
             </ToggleGroup>
-            <Tip label={saving ? "Saving…" : "Save"}>
-              <Button size="icon" onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
+            <Tip label={TARGET === "browser" ? "Save (off in browser mode)" : saving ? "Saving…" : "Save"}>
+              <Button
+                size="icon"
+                onClick={onSave}
+                disabled={TARGET === "browser" || !token || !dirty || !!blocker || saving}
+              >
                 <Save />
               </Button>
             </Tip>

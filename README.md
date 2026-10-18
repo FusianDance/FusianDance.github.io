@@ -38,7 +38,7 @@ npm run dev
 
 ## 🛠️ Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (edit mode does not touch GitHub here, see [Testing edit mode locally](#testing-edit-mode-locally))
 - `npm run build` - Build the static site into `build/client/`
 - `npm run typecheck` - Generate route types and run the TypeScript check
 - `npm run lint` - Run ESLint to check code quality
@@ -103,6 +103,17 @@ Log in → Google's account picker ("Sign in with Google", pick any of your Goog
 ```
 
 Each member logs in with their own Google account. Only the emails in the `ALLOWED_EMAILS` script property may edit; add or remove people there ([how](docs/edit-mode-setup.md#changing-things-later)).
+
+### Testing edit mode locally
+
+`npm run dev` picks where edit mode loads from and saves to with `EDIT_TARGET`. A red banner on every page tells you when it is not the real site.
+
+- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** is off. Changes stay in your browser only.
+- `EDIT_TARGET=local npm run dev`: like `browser`, but **Save** writes the changed `data/` files and new photos into your working tree. Review them with `git diff`.
+- `EDIT_TARGET=feat/my-branch npm run dev`: real Google login, loads from and commits to that (pushed) branch instead of `main`. Nothing is deployed.
+- `EDIT_TARGET=main npm run dev`: the live behaviour, **Save** commits to `main` and deploys the site. Only use it on purpose.
+
+Your browser draft remembers where it came from: switching the target, or changing the files (checkout, pull, hand edit) in `browser`/`local` mode, drops it and rereads the files. Builds always use `main`.
 
 Setup, maintenance and troubleshooting (GitHub App, Google login, Apps Script): [docs/edit-mode-setup.md](docs/edit-mode-setup.md).
 

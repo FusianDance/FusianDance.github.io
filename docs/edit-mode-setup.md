@@ -108,7 +108,7 @@ Already deployed with other settings? **Deploy** → **Manage deployments** → 
 ### 6. Point the site at the login
 
 1. In `src/lib/edit.ts`, put the Client ID from step 4.7 into `GOOGLE_CLIENT_ID` and the Web app URL from step 5.7 into `LOGIN_URL`. Neither is a secret.
-2. Test locally first: `npm run dev`, open `http://localhost:5173`, click **Log in** in the footer, pick an allowed account. You should come back to the same page with the edit bar at the bottom. Don't save here unless you mean it: saving from localhost commits to the real `main`.
+2. Test locally first: `EDIT_TARGET=main npm run dev` (plain `npm run dev` skips the login, see README → Testing edit mode locally), open `http://localhost:5173`, click **Log in** in the footer, pick an allowed account. You should come back to the same page with the edit bar at the bottom. Don't save here unless you mean it: saving from localhost commits to the real `main`.
 3. Commit, open a PR, merge. After the deploy (about 2 minutes), do the same on https://fusiandance.github.io.
 4. Try a small change and **Save**. A commit by `fusian-site-editor[bot]` should appear on `main`, followed by a deploy run in the Actions tab.
 
@@ -153,4 +153,4 @@ Apps Script logs every run under **Executions** (left sidebar) with the full err
 - The account picker lists every Google account signed in to the browser. Pick the one in `ALLOWED_EMAILS`; other accounts are turned away.
 - If someone else saved the same file while you were editing, Save refuses. Discard your changes and redo them.
 - Unsaved photos are kept in browser storage (about 5 MB). With many large photos, Save first and then add more.
-- Local testing: `npm run dev`, then use **Log in** on `http://localhost:5173`. Saving commits to the real `main`.
+- Local testing of the login: `EDIT_TARGET=main npm run dev` (or a branch name), then use **Log in** on `http://localhost:5173`. Saving commits to the real `main` (or that branch). Plain `npm run dev` skips login and does not save to GitHub.

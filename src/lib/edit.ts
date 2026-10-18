@@ -3,7 +3,8 @@
 // which comes back to / with a Google ID token in the hash. The site POSTs that to the Apps Script web app
 // (apps-script/Code.gs), which checks it and the email allowlist and answers with a 1h GitHub App token.
 // Edits are a draft in localStorage (survives reloads and re-login) and get saved as one commit to main,
-// which triggers deploy.yml.
+// which triggers deploy.yml. In dev, EDIT_TARGET (vite.config.ts) picks another target: "browser" (default:
+// local files, never saved), "local" (local files, Save writes them) or a branch name.
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parse } from "yaml";
 import { gitBlobSha, toAnnouncements, toPosts, toYaml, type AnnouncementEntry, type PostEntry } from "./content";
@@ -18,6 +19,18 @@ const GOOGLE_CLIENT_ID = "529886851662-d2brrv9g1odq1fuo8teasogk3tf7j2co.apps.goo
 const LOGIN_URL =
   "https://script.google.com/macros/s/AKfycbyYA7QuRTNsGEYmsOUX0zlk1sYpAtlxxkMbX7HSvjb12LKrIkN3T5MystBD56W8p_lndw/exec";
 const API = "https://api.github.com/repos/FusianDance/FusianDance.github.io";
+/** "main" in builds. "browser" and "local" use the working tree via the dev server, without login. */
+export const TARGET: string = import.meta.env.EDIT_TARGET ?? "main";
+const LOCAL = TARGET === "browser" || TARGET === "local";
+/** Shown on every page while TARGET isn't main, so nobody mistakes it for the real thing. */
+export const TARGET_NOTE =
+  TARGET === "main"
+    ? null
+    : TARGET === "browser"
+      ? "Browser mode: edits stay in this browser, Save is off."
+      : TARGET === "local"
+        ? "Local mode: Save writes data/ and public/uploads/ in your working tree."
+        : `Branch mode: Save commits to ${TARGET}, not main.`;
 const FILES = {
   announcements: "data/announcements.yml",
   posts: "data/insta-posts.yml",
@@ -41,9 +54,9 @@ export type Draft = {
   /** Photos pasted into a Markdown page and not yet in the repo: "/uploads/<name>.jpg" → data URL. */
   uploads: Record<string, string>;
 };
-/** draft = being edited, base = as loaded from GitHub, shas = blob shas of the loaded files (conflict check),
- * preview = show the pages with the draft instead of the editors. */
-export type Session = { draft: Draft; base: Draft; shas: Record<FileKey, string>; preview?: boolean };
+/** draft = being edited, base = as loaded, shas = blob shas of the loaded files (conflict check),
+ * target = the TARGET it was loaded from, preview = show the pages with the draft instead of the editors. */
+export type Session = { draft: Draft; base: Draft; shas: Record<FileKey, string>; target: string; preview?: boolean };
 type Token = { token: string; expires: string };
 
 // ---- localStorage-backed store (prerendered HTML renders without it, the client switches after hydration)
@@ -97,13 +110,15 @@ function useStored<T>(key: string, valid: (value: T) => boolean = always): T | n
   }, [raw, valid]);
 }
 
-const notExpired = (t: Token) => Date.parse(t.expires) > Date.now() + 60_000;
+// In browser/local mode the "token" is the mode's name, so it never mixes with a GitHub token.
+const usable = (t: Token) =>
+  Date.parse(t.expires) > Date.now() + 60_000 && (LOCAL ? t.token === TARGET : !["browser", "local"].includes(t.token));
 
 /** The GitHub token, or null when logged out or about to expire. */
-export const useToken = () => useStored<Token>(TOKEN_KEY, notExpired)?.token ?? null;
-// Drafts from before announcements had startDate (saving would be refused) or before the newest data file
-// (no sha to save it with): dropped, a fresh one is loaded.
-const current = (s: Session) => s.draft.audition != null && s.draft.announcements.every((a) => a.startDate);
+export const useToken = () => useStored<Token>(TOKEN_KEY, usable)?.token ?? null;
+// Drafts from another target (or from before targets, or before announcements had startDate): dropped,
+// a fresh one is loaded from the current target.
+const current = (s: Session) => s.target === TARGET && s.draft.announcements.every((a) => a.startDate);
 export const useSession = () => useStored<Session>(SESSION_KEY, current);
 export const useDraft = () => useSession()?.draft ?? null;
 /** The draft while the pages show their editors (logged in, not previewing), else null. */
@@ -144,6 +159,7 @@ export function useLiveContent<T extends { announcements?: Announcement[]; posts
 // ---- login / logout
 
 export function login() {
+  if (LOCAL) return void write(TOKEN_KEY, { token: TARGET, expires: "9999-12-31T00:00:00Z" } satisfies Token);
   const state = crypto.randomUUID();
   sessionStorage.setItem(LOGIN_KEY, JSON.stringify({ state, path: location.pathname }));
   const params = new URLSearchParams({
@@ -216,19 +232,34 @@ const decode = (base64: string) =>
   new TextDecoder().decode(Uint8Array.from(atob(base64.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
 
 async function getFile(token: string, key: FileKey, ref: string) {
+  if (LOCAL) {
+    const res = await fetch(`/__edit/${FILES[key]}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${FILES[key]}: the dev server answered ${res.status}.`);
+    const text = await res.text();
+    return { sha: await gitBlobSha(text), text };
+  }
   const file = await gh<{ sha: string; content: string }>(token, `/contents/${FILES[key]}?ref=${ref}`);
   return { sha: file.sha, text: decode(file.content) };
 }
 
-/** Loads the current files from main and starts a fresh draft. */
+/** Loads the current files from TARGET and starts a fresh draft. */
 export async function startSession(token: string) {
-  const files = await Promise.all(KEYS.map((key) => getFile(token, key, "main")));
+  const files = await Promise.all(KEYS.map((key) => getFile(token, key, TARGET)));
   const base = Object.fromEntries(
     KEYS.map((key, i) => [key, isMarkdown(key) ? files[i].text : (parse(files[i].text) ?? [])]),
   ) as Omit<Draft, "uploads">;
   const shas = Object.fromEntries(KEYS.map((key, i) => [key, files[i].sha])) as Session["shas"];
   const draft = { ...base, uploads: {} };
-  write(SESSION_KEY, { draft, base: draft, shas } satisfies Session);
+  write(SESSION_KEY, { draft, base: draft, shas, target: TARGET } satisfies Session);
+}
+
+/** Browser/local mode: drops the draft if the local files changed since it was loaded (git checkout, pull,
+ * hand edit), so a fresh one is loaded. Call once per page load. */
+export async function dropIfStale() {
+  const session = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
+  if (!LOCAL || session?.target !== TARGET) return;
+  const files = await Promise.all(KEYS.map((key) => getFile("", key, "")));
+  if (KEYS.some((key, i) => files[i].sha !== session.shas[key])) write(SESSION_KEY, null);
 }
 
 /** What blocks saving, or null. */
@@ -258,19 +289,20 @@ function serialize(key: FileKey, draft: Draft, fileText: string) {
   return toYaml(fileText, draft[key]);
 }
 
-/** Commits all changed files (and the photos the Markdown pages use) as one commit on main and returns its sha.
- * Afterwards the saved draft is the new base. */
+/** Commits all changed files (and the photos the Markdown pages use) as one commit on TARGET and returns its sha,
+ * or in local mode writes them to disk and returns null. Afterwards the saved draft is the new base. */
 export async function save(token: string, { draft, base, shas }: Session) {
+  if (TARGET === "browser") throw new Error("Browser mode never saves. Use EDIT_TARGET=local or a branch.");
   const changed = KEYS.filter((key) => JSON.stringify(draft[key]) !== JSON.stringify(base[key]));
   if (!changed.length) return null;
-  const head = (await gh<{ object: { sha: string } }>(token, "/git/ref/heads/main")).object.sha;
+  const head = LOCAL ? "" : (await gh<{ object: { sha: string } }>(token, `/git/ref/heads/${TARGET}`)).object.sha;
   const tree: { path: string; mode: string; type: string; content?: string; sha?: string }[] = [];
   const newShas = { ...shas };
   for (const key of changed) {
     const file = await getFile(token, key, head);
     if (file.sha !== shas[key]) {
       throw new Error(
-        `${FILES[key]} was changed by someone else since you started editing. Discard your changes and redo them.`,
+        `${FILES[key]} was changed elsewhere since you started editing. Discard your changes and redo them.`,
       );
     }
     const content = serialize(key, draft, file.text);
@@ -278,8 +310,21 @@ export async function save(token: string, { draft, base, shas }: Session) {
     newShas[key] = await gitBlobSha(content);
   }
   // Photos: binary, so they go up as blobs first. Ones deleted from the text again are dropped.
-  for (const [path, dataUrl] of Object.entries(draft.uploads)) {
-    if (path in base.uploads || ![draft.about, draft.audition].some((text) => text.includes(path))) continue;
+  const photos = Object.entries(draft.uploads).filter(
+    ([path]) => !(path in base.uploads) && [draft.about, draft.audition].some((text) => text.includes(path)),
+  );
+  if (LOCAL) {
+    const put = async (path: string, body: BodyInit) => {
+      const res = await fetch(`/__edit/${path}`, { method: "PUT", body });
+      if (!res.ok) throw new Error(`Writing ${path} failed: the dev server answered ${res.status}.`);
+    };
+    for (const { path, content } of tree) await put(path, content!);
+    for (const [path, dataUrl] of photos) await put(`public${path}`, await (await fetch(dataUrl)).blob());
+    const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
+    if (current) write(SESSION_KEY, { ...current, base: draft, shas: newShas } satisfies Session);
+    return null;
+  }
+  for (const [path, dataUrl] of photos) {
     const blob = await gh<{ sha: string }>(token, "/git/blobs", {
       method: "POST",
       json: { content: dataUrl.slice(dataUrl.indexOf(",") + 1), encoding: "base64" },
@@ -295,9 +340,9 @@ export async function save(token: string, { draft, base, shas }: Session) {
     method: "POST",
     json: { message: `content: update ${changed.join(", ")} via edit mode`, tree: newTree.sha, parents: [head] },
   });
-  // not forced: fails if main moved since we read it, so nothing gets overwritten
-  await gh(token, "/git/refs/heads/main", { method: "PATCH", json: { sha: commit.sha } });
-  // Re-reading main right away can return the old files, so the new base comes from what we sent.
+  // not forced: fails if the branch moved since we read it, so nothing gets overwritten
+  await gh(token, `/git/refs/heads/${TARGET}`, { method: "PATCH", json: { sha: commit.sha } });
+  // Re-reading the branch right away can return the old files, so the new base comes from what we sent.
   // Edits typed while saving stay in the draft. Saved photos stay in uploads so the preview shows them
   // until the deploy is live; Log out clears them.
   const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
