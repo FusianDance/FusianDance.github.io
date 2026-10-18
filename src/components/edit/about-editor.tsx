@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image, { type ImageOptions } from "@tiptap/extension-image";
-import { Markdown } from "@tiptap/markdown";
-import { Selection } from "@tiptap/pm/state";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from "@codemirror/language";
+import type { EditorState, Range } from "@codemirror/state";
+import {
+  Decoration,
+  EditorView,
+  keymap,
+  ViewPlugin,
+  WidgetType,
+  type DecorationSet,
+  type ViewUpdate,
+} from "@codemirror/view";
+import type { SyntaxNode } from "@lezer/common";
+import { tags } from "@lezer/highlight";
 import {
   Bold,
   Heading1,
@@ -38,16 +48,16 @@ async function shrink(file: File) {
 
 const images = (list?: FileList | null) => [...(list ?? [])].filter((f) => f.type.startsWith("image/"));
 
-/** Shrinks the photos into the draft's uploads and inserts them at `pos` (default: the cursor).
- * Returns an error message, or "". */
-async function addPhotos(editor: Editor, uploads: Record<string, string>, files: File[], pos?: number) {
+/** Shrinks the photos into the draft's uploads and inserts them at `pos` (default: the cursor), each as its own
+ * paragraph. Returns an error message, or "". */
+async function addPhotos(view: EditorView, uploads: Record<string, string>, files: File[], pos?: number) {
   const added: Record<string, string> = {};
-  const nodes = [];
+  const lines = [];
   try {
     for (const file of files) {
       const path = `/uploads/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.jpg`;
       added[path] = await shrink(file);
-      nodes.push({ type: "image", attrs: { src: path, alt: file.name.replace(/\.[^.]*$/, "") } });
+      lines.push(`![${file.name.replace(/\.[^.]*$/, "").replace(/[[\]]/g, "")}](${path})`);
     }
   } catch {
     return "Couldn't read that image.";
@@ -56,67 +66,228 @@ async function addPhotos(editor: Editor, uploads: Record<string, string>, files:
     return "Not enough browser storage for more unsaved photos. Save first, then add more.";
   }
   Object.assign(uploads, added);
-  const chain = editor.chain().focus();
-  (pos === undefined ? chain.insertContent(nodes) : chain.insertContentAt(pos, nodes))
-    // The new photo ends up selected, so the next key or paste would replace it: move on to the text after it.
-    .command(({ tr }) => !!tr.setSelection(Selection.near(tr.doc.resolve(tr.selection.to))))
-    .run();
+  // The text may have changed while the photos were shrunk.
+  const at = Math.min(pos ?? view.state.selection.main.head, view.state.doc.length);
+  const line = view.state.doc.lineAt(at);
+  const insert = (at > line.from ? "\n\n" : "") + lines.join("\n\n") + (at < line.to ? "\n\n" : "");
+  view.dispatch({ changes: { from: at, insert }, selection: { anchor: at + insert.length } });
+  view.focus();
   return "";
 }
 
-// The markdown keeps "/uploads/<name>.jpg"; photos not saved yet aren't on the server, so show them from the draft.
-// A function, since configure() deep-copies plain objects and wouldn't see photos added later.
-const DraftImage = Image.extend<ImageOptions & { show: (src: string) => string }>({
-  addOptions() {
-    return { ...this.parent!(), show: (src) => src };
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ["img", { ...HTMLAttributes, src: this.options.show(HTMLAttributes.src) }];
-  },
+// Live preview, like Obsidian: the text stays markdown, but its syntax is hidden (images shown, bullets drawn)
+// except on the lines the cursor is on, which show the raw markdown to edit.
+class ImageWidget extends WidgetType {
+  constructor(
+    readonly src: string,
+    readonly alt: string,
+  ) {
+    super();
+  }
+  eq(other: ImageWidget) {
+    return other.src === this.src && other.alt === this.alt;
+  }
+  toDOM() {
+    const img = document.createElement("img");
+    img.src = this.src;
+    img.alt = this.alt;
+    img.className = "my-2 max-w-full rounded-lg";
+    return img;
+  }
+}
+
+class BulletWidget extends WidgetType {
+  eq() {
+    return true;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.textContent = "•";
+    return span;
+  }
+}
+
+const hidden = Decoration.replace({});
+const bullet = Decoration.replace({ widget: new BulletWidget() });
+// Same looks as `.rich-text` in app.css (no margins: CodeMirror can't measure them on lines).
+const headings: Record<string, Decoration> = {
+  ATXHeading1: Decoration.line({ class: "text-4xl font-bold" }),
+  ATXHeading2: Decoration.line({ class: "text-2xl font-semibold" }),
+  ATXHeading3: Decoration.line({ class: "text-xl font-semibold" }),
+};
+const quote = "border-x border-destructive/40 px-4! text-lg text-destructive";
+
+function preview(view: EditorView, show: (src: string) => string): DecorationSet {
+  const { state } = view;
+  const doc = state.doc;
+  const raw = new Set<number>();
+  if (view.hasFocus) {
+    for (const r of state.selection.ranges) {
+      for (let n = doc.lineAt(r.from).number; n <= doc.lineAt(r.to).number; n++) raw.add(n);
+    }
+  }
+  const isRaw = (pos: number) => raw.has(doc.lineAt(pos).number);
+  // Hides a mark, and the space after it for line marks like "## " or "> ".
+  const hide = (from: number, to: number, space = false) =>
+    hidden.range(from, space && doc.sliceString(to, to + 1) === " " ? to + 1 : to);
+  const decos: Range<Decoration>[] = [];
+  // ponytail: walks the whole document on every cursor move, fine for one page; use view.visibleRanges if it grows long.
+  syntaxTree(state).iterate({
+    enter: (node) => {
+      const { name, from, to } = node;
+      const parent = node.node.parent?.name;
+      if (headings[name]) decos.push(headings[name].range(doc.lineAt(from).from));
+      if (name === "Blockquote") {
+        const first = doc.lineAt(from).number;
+        const last = doc.lineAt(to).number;
+        for (let n = first; n <= last; n++) {
+          const cls = `${quote} ${n === first ? "rounded-t-lg border-t pt-3!" : ""} ${n === last ? "rounded-b-lg border-b pb-3!" : ""}`;
+          decos.push(Decoration.line({ class: cls }).range(doc.line(n).from));
+        }
+      }
+      if (isRaw(from)) return;
+      if (name === "Image") {
+        const marks = node.node.getChildren("LinkMark");
+        const url = node.node.getChild("URL");
+        if (url && marks.length > 1) {
+          const alt = doc.sliceString(marks[0].to, marks[1].from);
+          decos.push(
+            Decoration.replace({ widget: new ImageWidget(show(doc.sliceString(url.from, url.to)), alt) }).range(
+              from,
+              to,
+            ),
+          );
+          return false;
+        }
+      }
+      if (name === "HeaderMark" || name === "QuoteMark") decos.push(hide(from, to, true));
+      if (["EmphasisMark", "StrikethroughMark", "CodeMark", "LinkMark"].includes(name)) decos.push(hide(from, to));
+      if ((name === "URL" || name === "LinkTitle") && parent === "Link") decos.push(hide(from, to));
+      if (name === "ListMark" && node.node.parent?.parent?.name === "BulletList") decos.push(bullet.range(from, to));
+    },
+  });
+  return Decoration.set(decos, true);
+}
+
+const livePreview = (show: (src: string) => string) =>
+  ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = preview(view, show);
+      }
+      update(u: ViewUpdate) {
+        if (u.docChanged || u.selectionSet || u.focusChanged || syntaxTree(u.startState) !== syntaxTree(u.state)) {
+          this.decorations = preview(u.view, show);
+        }
+      }
+    },
+    { decorations: (p) => p.decorations },
+  );
+
+const highlight = HighlightStyle.define([
+  { tag: tags.strong, class: "font-bold" },
+  { tag: tags.emphasis, class: "italic" },
+  { tag: tags.strikethrough, class: "line-through" },
+  { tag: [tags.link, tags.url], class: "text-primary" },
+  { tag: tags.monospace, class: "rounded bg-muted px-1 py-0.5 font-mono text-sm" },
+  { tag: tags.processingInstruction, class: "text-muted-foreground" },
+]);
+
+const theme = EditorView.theme({
+  "&.cm-focused": { outline: "none" },
+  ".cm-scroller": { fontFamily: "inherit", lineHeight: "inherit" },
+  ".cm-content": { minHeight: "60vh", padding: "0" },
 });
 
-type Tool = { label: string; icon: LucideIcon; active: (e: Editor) => boolean; run: (e: Editor) => void };
+/** The innermost `name` node around the cursor. */
+function around(state: EditorState, name: string) {
+  for (let n: SyntaxNode | null = syntaxTree(state).resolveInner(state.selection.main.head, -1); n; n = n.parent) {
+    if (n.name === name) return n;
+  }
+  return null;
+}
+
+type Tool = {
+  label: string;
+  icon: LucideIcon;
+  key?: string;
+  active: (s: EditorState) => boolean;
+  run: (v: EditorView) => void;
+};
+
+/** Toggles `prefix` on the selected lines; `family` matches the prefixes it replaces (other heading levels etc.). */
+function linePrefix(prefix: string, own: RegExp, family: RegExp) {
+  const active = (s: EditorState) => own.test(s.doc.lineAt(s.selection.main.head).text);
+  return {
+    active,
+    run: (v: EditorView) => {
+      const { state } = v;
+      const off = active(state);
+      const { from, to } = state.selection.main;
+      const changes = [];
+      for (let n = state.doc.lineAt(from).number; n <= state.doc.lineAt(to).number; n++) {
+        const line = state.doc.line(n);
+        const old = line.text.match(family)?.[0] ?? "";
+        changes.push({ from: line.from, to: line.from + old.length, insert: off ? "" : prefix });
+      }
+      v.dispatch({ changes });
+      v.focus();
+    },
+  };
+}
+
+/** Removes the `node` around the cursor, or wraps the selection in `mark`. */
+function inlineMark(node: string, mark: string) {
+  return {
+    active: (s: EditorState) => !!around(s, node),
+    run: (v: EditorView) => {
+      const n = around(v.state, node);
+      if (n) {
+        v.dispatch({ changes: n.getChildren("EmphasisMark").map(({ from, to }) => ({ from, to })) });
+      } else {
+        const { from, to } = v.state.selection.main;
+        v.dispatch({
+          changes: [
+            { from, insert: mark },
+            { from: to, insert: mark },
+          ],
+          selection: { anchor: from + mark.length, head: to + mark.length },
+        });
+      }
+      v.focus();
+    },
+  };
+}
+
 const tools: Tool[] = [
-  ...([1, 2, 3] as const).map((level) => ({
-    label: `Heading ${level}`,
-    icon: [Heading1, Heading2, Heading3][level - 1],
-    active: (e: Editor) => e.isActive("heading", { level }),
-    run: (e: Editor) => e.chain().focus().toggleHeading({ level }).run(),
-  })),
-  { label: "Bold", icon: Bold, active: (e) => e.isActive("bold"), run: (e) => e.chain().focus().toggleBold().run() },
-  {
-    label: "Italic",
-    icon: Italic,
-    active: (e) => e.isActive("italic"),
-    run: (e) => e.chain().focus().toggleItalic().run(),
-  },
-  {
-    label: "List",
-    icon: List,
-    active: (e) => e.isActive("bulletList"),
-    run: (e) => e.chain().focus().toggleBulletList().run(),
-  },
-  {
-    label: "Numbered list",
-    icon: ListOrdered,
-    active: (e) => e.isActive("orderedList"),
-    run: (e) => e.chain().focus().toggleOrderedList().run(),
-  },
-  {
-    label: "Highlighted note",
-    icon: TextQuote,
-    active: (e) => e.isActive("blockquote"),
-    run: (e) => e.chain().focus().toggleBlockquote().run(),
-  },
+  { label: "Heading 1", icon: Heading1, ...linePrefix("# ", /^# /, /^#{1,6} /) },
+  { label: "Heading 2", icon: Heading2, ...linePrefix("## ", /^## /, /^#{1,6} /) },
+  { label: "Heading 3", icon: Heading3, ...linePrefix("### ", /^### /, /^#{1,6} /) },
+  { label: "Bold", icon: Bold, key: "Mod-b", ...inlineMark("StrongEmphasis", "**") },
+  { label: "Italic", icon: Italic, key: "Mod-i", ...inlineMark("Emphasis", "*") },
+  { label: "List", icon: List, ...linePrefix("- ", /^[-*+] /, /^([-*+]|\d+[.)]) /) },
+  { label: "Numbered list", icon: ListOrdered, ...linePrefix("1. ", /^\d+[.)] /, /^([-*+]|\d+[.)]) /) },
+  { label: "Highlighted note", icon: TextQuote, ...linePrefix("> ", /^>/, /^> ?/) },
   {
     label: "Link",
     icon: Link,
-    active: (e) => e.isActive("link"),
-    run: (e) => {
-      const href = prompt("Link to (https://… or /page), empty to remove:", e.getAttributes("link").href ?? "");
-      if (href === null) return;
-      const chain = e.chain().focus().extendMarkRange("link");
-      (href.trim() ? chain.setLink({ href: href.trim() }) : chain.unsetLink()).run();
+    key: "Mod-k",
+    active: (s) => !!around(s, "Link"),
+    run: (v) => {
+      const { state } = v;
+      const n = around(state, "Link");
+      const url = n?.getChild("URL");
+      const href = prompt(
+        "Link to (https://… or /page), empty to remove:",
+        url ? state.sliceDoc(url.from, url.to) : "",
+      )?.trim();
+      if (href === undefined || (!n && !href)) return;
+      const marks = n?.getChildren("LinkMark") ?? [];
+      const { from, to } = n ?? state.selection.main;
+      const text = n ? state.sliceDoc(marks[0].to, marks[1]?.from ?? n.to) : state.sliceDoc(from, to) || href;
+      v.dispatch({ changes: { from, to, insert: href ? `[${text}](${href})` : text } });
+      v.focus();
     },
   },
 ];
@@ -124,88 +295,93 @@ const tools: Tool[] = [
 export function AboutEditor({ draft }: { draft: Draft }) {
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const parent = useRef<HTMLDivElement>(null);
   // What the editor last wrote, to tell its own updates from outside ones (Discard changes).
   const written = useRef(draft.about);
-  // Shown by DraftImage; grows as photos are added, so it's created once and mutated.
+  // Shown by the live preview; grows as photos are added, so it's created once and mutated.
   const [uploads] = useState(() => ({ ...draft.uploads }));
-  const editorRef = useRef<Editor | null>(null);
-
-  const editor = useEditor({
-    immediatelyRender: false,
-    // ponytail: no table extension, so a hand-written markdown table would be lost on save; add @tiptap/extension-table if the about page needs one.
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        underline: false, // no markdown for it
-        codeBlock: false,
-        link: { openOnClick: false, autolink: true },
-      }),
-      DraftImage.configure({ show: (src) => uploads[src] ?? src }),
-      Markdown,
-    ],
-    content: draft.about,
-    contentType: "markdown",
-    editorProps: {
-      attributes: {
-        class:
-          "rich-text min-h-[60vh] rounded-lg border p-6 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-        "aria-label": "About page text",
-      },
-      // Photos go where they're dropped or pasted. A link pasted onto selected text links it (Link's default).
-      handleDrop(view, event, _slice, moved) {
-        const files = images(event.dataTransfer?.files);
-        if (moved || !files.length || !editorRef.current) return false;
-        event.preventDefault();
-        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
-        addPhotos(editorRef.current, uploads, files, pos).then(setError);
-        return true;
-      },
-      handlePaste(_view, event) {
-        const files = images(event.clipboardData?.files);
-        if (!files.length || !editorRef.current) return false;
-        addPhotos(editorRef.current, uploads, files).then(setError);
-        return true;
-      },
-    },
-    onCreate: ({ editor }) => {
-      editorRef.current = editor;
-    },
-    onUpdate: ({ editor }) => {
-      written.current = editor.getMarkdown().trimEnd() + "\n";
-      updateDraft((d) => ({ ...d, about: written.current }));
-    },
-  });
+  const [view, setView] = useState<EditorView | null>(null);
+  const [active, setActive] = useState<boolean[]>([]);
 
   useEffect(() => {
-    if (editor && draft.about !== written.current) {
-      written.current = draft.about;
-      editor.commands.setContent(draft.about, { contentType: "markdown", emitUpdate: false });
-    }
-  }, [editor, draft.about]);
+    const v: EditorView = new EditorView({
+      parent: parent.current!,
+      doc: written.current,
+      extensions: [
+        history(),
+        keymap.of([
+          ...tools.filter((t) => t.key).map((t) => ({ key: t.key, run: (v: EditorView) => (t.run(v), true) })),
+          ...defaultKeymap,
+          ...historyKeymap,
+        ]),
+        markdown({ base: markdownLanguage }), // GFM, as on the page; Enter continues lists and notes
+        syntaxHighlighting(highlight),
+        livePreview((src) => uploads[src] ?? src),
+        theme,
+        EditorView.lineWrapping,
+        EditorView.contentAttributes.of({ "aria-label": "About page text" }),
+        EditorView.domEventHandlers({
+          // Photos go where they're dropped or pasted. A link pasted onto selected text links it.
+          drop(event, v) {
+            const files = images(event.dataTransfer?.files);
+            if (!files.length) return false;
+            event.preventDefault();
+            addPhotos(v, uploads, files, v.posAtCoords({ x: event.clientX, y: event.clientY }) ?? undefined).then(
+              setError,
+            );
+            return true;
+          },
+          paste(event, v) {
+            const files = images(event.clipboardData?.files);
+            const text = event.clipboardData?.getData("text/plain").trim() ?? "";
+            const { from, to } = v.state.selection.main;
+            if (files.length) {
+              addPhotos(v, uploads, files).then(setError);
+            } else if (from < to && /^https?:\/\/\S+$/.test(text)) {
+              v.dispatch({ changes: { from, to, insert: `[${v.state.sliceDoc(from, to)}](${text})` } });
+            } else return false;
+            event.preventDefault();
+            return true;
+          },
+        }),
+        EditorView.updateListener.of((u) => {
+          if (u.docChanged && u.state.doc.toString() !== written.current) {
+            written.current = u.state.doc.toString();
+            updateDraft((d) => ({ ...d, about: written.current }));
+          }
+          if (u.docChanged || u.selectionSet) setActive(tools.map((t) => t.active(u.state)));
+        }),
+      ],
+    });
+    setView(v);
+    setActive(tools.map((t) => t.active(v.state)));
+    return () => v.destroy();
+  }, [uploads]);
 
-  const active = useEditorState({
-    editor,
-    selector: ({ editor }) => (editor ? tools.map((t) => t.active(editor)) : []),
-  });
+  useEffect(() => {
+    if (view && draft.about !== written.current) {
+      written.current = draft.about;
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: draft.about } });
+    }
+  }, [view, draft.about]);
 
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-3">
-        <div className="sticky top-16 z-10 flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1">
+        {/* mousedown would move the focus out of the editor, and the cursor line would flip to the preview */}
+        <div
+          className="sticky top-16 z-10 flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1"
+          onMouseDown={(e) => e.preventDefault()}
+        >
           {tools.map((tool, i) => (
             <Tip key={tool.label} label={tool.label}>
-              <Toggle
-                size="sm"
-                pressed={!!active?.[i]}
-                onPressedChange={() => editor && tool.run(editor)}
-                disabled={!editor}
-              >
+              <Toggle size="sm" pressed={!!active[i]} onPressedChange={() => view && tool.run(view)} disabled={!view}>
                 <tool.icon />
               </Toggle>
             </Tip>
           ))}
           <Tip label="Add photos">
-            <Button variant="ghost" size="icon-sm" onClick={() => fileInput.current!.click()} disabled={!editor}>
+            <Button variant="ghost" size="icon-sm" onClick={() => fileInput.current!.click()} disabled={!view}>
               <ImagePlus />
             </Button>
           </Tip>
@@ -216,16 +392,22 @@ export function AboutEditor({ draft }: { draft: Draft }) {
             multiple
             hidden
             onChange={(e) => {
-              if (editor) addPhotos(editor, uploads, images(e.target.files)).then(setError);
+              if (view) addPhotos(view, uploads, images(e.target.files)).then(setError);
               e.target.value = "";
             }}
           />
         </div>
-        <EditorContent editor={editor} />
+        <div
+          ref={parent}
+          className="rounded-lg border p-6 focus-within:ring-[3px] focus-within:ring-ring/50"
+          // Clicks in the padding should still reach the text.
+          onMouseDown={(e) => e.target === e.currentTarget && (e.preventDefault(), view?.focus())}
+        />
         {error && <p className="text-sm text-destructive">{error}</p>}
         <p className="text-sm text-muted-foreground">
-          Drop, paste or add photos (shrunk to 1600px, uploaded on Save). Paste a link onto selected text to link it.
-          Markdown shortcuts work too: <code>## </code> for a heading, <code>- </code> for a list.
+          The text is Markdown: the line you're on shows it, e.g. <code>## </code> for a heading, <code>- </code> for a
+          list, <code>&gt; </code> for a highlighted note, <code>**bold**</code>. Drop, paste or add photos (shrunk to
+          1600px, uploaded on Save). Paste a link onto selected text to link it.
         </p>
       </div>
     </div>

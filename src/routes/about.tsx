@@ -12,7 +12,7 @@ export const meta: Route.MetaFunction = () =>
     "About Fusian Dance Crew, a dance crew in Munich founded in 2017: our mission, what we do, and how to join.",
   );
 
-// The editor (Tiptap) only loads in edit mode, visitors don't download it.
+// The editor (CodeMirror) only loads in edit mode, visitors don't download it.
 const AboutEditor = lazy(() => import("@/components/edit/about-editor").then((m) => ({ default: m.AboutEditor })));
 
 export function loader() {

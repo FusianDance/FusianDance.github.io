@@ -124,7 +124,7 @@
   }
 }
 
-/* Shared by the read-only Markdown renderer and the rich-text editor (.ProseMirror inside). */
+/* Used by the read-only Markdown renderer. The about editor (about-editor.tsx) mirrors headings and notes with line classes. */
 @layer components {
   .rich-text {
     & h1 {
