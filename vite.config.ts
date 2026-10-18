@@ -70,6 +70,9 @@ export default defineConfig(({ command }) => {
   }
   return {
     resolve: { tsconfigPaths: true },
+    // Scan every page up front: a dependency found later makes Vite re-bundle and reload the page in dev,
+    // which drops unsaved edits.
+    optimizeDeps: { entries: ["src/**/*.tsx"] },
     // Edit mode target: browser (read-only), local (working tree) or a GitHub branch
     define: { "import.meta.env.EDIT_TARGET": JSON.stringify(target) },
     plugins: [tailwindcss(), reactRouter(), localFiles(target)],
