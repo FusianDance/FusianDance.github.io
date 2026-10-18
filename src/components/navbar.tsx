@@ -8,10 +8,10 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
 import { Tip } from "@/components/edit/tip";
 import { FusianIcon } from "@/components/fusian.icon";
-import { Menu, X } from "lucide-react";
+import { Eye, EyeOff, Menu, X } from "lucide-react";
 import { FlaggedPages, NavItems, type NavItem } from "@/lib/models/nav-item";
 import { updateDraft, useEditDraft } from "@/lib/edit";
 
@@ -20,16 +20,18 @@ const EDIT_ITEMS: NavItem[] = [{ navTitle: "Contact", appRoute: "/edit/contact" 
 
 type Item = NavItem & { key?: string };
 
-/** Switches a flagged page on or off in the draft; the deploy after Save builds or drops it. */
-function PageSwitch({ item, on, className }: { item: Item; on: boolean; className: string }) {
+/** Turns a flagged page on or off in the draft; the deploy after Save builds or drops it. */
+function PageToggle({ item, on, className }: { item: Item; on: boolean; className: string }) {
   return (
     <Tip label={`${item.navTitle} page online (after Save and deploy)`}>
-      <Switch
-        size="sm"
-        className={className}
-        checked={on}
-        onCheckedChange={(checked) => updateDraft((d) => ({ ...d, pages: { ...d.pages, [item.key!]: checked } }))}
-      />
+      <Toggle
+        variant="outline"
+        className={cn("size-6 min-w-6 bg-background px-0 [&_svg:not([class*='size-'])]:size-3.5", className)}
+        pressed={on}
+        onPressedChange={(pressed) => updateDraft((d) => ({ ...d, pages: { ...d.pages, [item.key!]: pressed } }))}
+      >
+        {on ? <Eye /> : <EyeOff />}
+      </Toggle>
     </Tip>
   );
 }
@@ -81,7 +83,9 @@ export function Navbar({ pages }: { pages: string[] }) {
                       {item.navTitle}
                     </span>
                   )}
-                  {draft && item.key && <PageSwitch item={item} on={on(item)} className="absolute -top-1 -right-1" />}
+                  {draft && item.key && (
+                    <PageToggle item={item} on={on(item)} className="absolute -top-2.5 -right-2.5" />
+                  )}
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
@@ -124,7 +128,7 @@ export function Navbar({ pages }: { pages: string[] }) {
                     <span className="block px-3 py-2 text-base font-medium text-muted-foreground">{item.navTitle}</span>
                   )}
                   {draft && item.key && (
-                    <PageSwitch item={item} on={on(item)} className="absolute top-1/2 right-3 -translate-y-1/2" />
+                    <PageToggle item={item} on={on(item)} className="absolute top-1/2 right-3 -translate-y-1/2" />
                   )}
                 </div>
               ))}
