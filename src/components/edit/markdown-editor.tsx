@@ -195,7 +195,8 @@ const highlight = HighlightStyle.define([
 const theme = EditorView.theme({
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": { fontFamily: "inherit", lineHeight: "inherit" },
-  ".cm-content": { minHeight: "60vh", padding: "0" },
+  // CodeMirror's base theme makes the caret black, invisible in dark mode: use the text color.
+  ".cm-content": { minHeight: "60vh", padding: "0", caretColor: "currentColor" },
 });
 
 /** The innermost `name` node around the cursor. */
