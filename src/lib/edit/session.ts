@@ -1,17 +1,18 @@
 // Edit mode: the content is edited in memory and Save hands it to the store for TARGET: GitHub (one commit on
 // main, which triggers deploy.yml, or on a branch in dev), the working tree (local) or localStorage (browser).
 // TARGET is fixed at build time, so the bundle only keeps the store it uses.
-// Unsaved edits are lost on reload, so the browser asks first; a re-login carries them through the trip to Google.
+// Typing only touches memory. Unsaved edits are backed up to localStorage when the page is left or hidden, so
+// they survive reloads, the login trip to Google and closing the tab.
 import { useMemo, useSyncExternalStore } from "react";
 import { toAnnouncements, toPosts } from "@/lib/content";
 import type { Announcement } from "@/lib/models/announcement";
 import type { InstaPost } from "@/lib/models/insta-post";
 import { clearToken, finishGoogleLogin, googleLogin } from "./auth";
 import { browserStore } from "./browser-store";
-import type { ContentStore, Draft, Saved } from "./files";
+import { KEYS, type ContentStore, type Draft, type Saved } from "./files";
 import { githubStore } from "./github-store";
 import { localStore } from "./local-store";
-import { LOCAL, TARGET } from "./target";
+import { TARGET } from "./target";
 
 export type { Draft } from "./files";
 export { problem } from "./files";
@@ -63,12 +64,22 @@ export function setPreview(preview: boolean) {
 
 export function discard() {
   if (session) set({ ...session, draft: session.saved.content });
+  dropBackup();
 }
 
-/** Loads the saved content from the store. Once per page load, after login. */
+/** Loads the saved content from the store, and the unsaved edits on top if they are based on it. Once per page
+ * load, after login. */
 export function startSession() {
   loading ??= store.load().then(
-    (saved) => set({ draft: saved.content, saved, preview: false }),
+    (saved) => {
+      const kept = readBackup();
+      if (kept && KEYS.every((key) => kept.saved.shas[key] === saved.shas[key])) {
+        set({ draft: kept.draft, saved: kept.saved, preview: false });
+      } else {
+        if (kept) dropBackup(); // made on content that changed since (or in another mode)
+        set({ draft: saved.content, saved, preview: false });
+      }
+    },
     (e) => {
       loading = null;
       throw e;
@@ -82,6 +93,7 @@ export async function save() {
   const { draft, saved } = session!;
   const result = await store.save(draft, saved);
   if (session) set({ ...session, saved: result.saved });
+  dropBackup();
   return result.commit ?? null;
 }
 
@@ -101,16 +113,48 @@ export function useLiveContent<T extends { announcements?: Announcement[]; posts
   );
 }
 
-// ---- unsaved edits across reloads and logins
+// ---- unsaved edits across reloads, logins and closed tabs
 
-const HANDOFF_KEY = "fusian-edit-unsaved"; // sessionStorage, only for the trip to Google and back
-let leaving = false; // our own redirect to Google: no "leave site?" prompt, the edits travel along
+const BACKUP_KEY = "fusian-edit-draft";
+/** The unsaved edits and the saved state they are based on, from the last time the page was left. */
+type Backup = { target: string; draft: Draft; saved: Saved };
+
+function readBackup() {
+  try {
+    const kept = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null") as Backup | null;
+    return kept?.target === TARGET ? kept : null;
+  } catch {
+    return null;
+  }
+}
+
+function dropBackup() {
+  try {
+    localStorage.removeItem(BACKUP_KEY);
+  } catch {
+    // storage blocked: there is no backup
+  }
+}
+
+/** false if the unsaved edits didn't fit into localStorage (many big photos). Only Save, Discard and Log out
+ * remove the backup, so a tab without edits never deletes another tab's. */
+function backup() {
+  if (!session || !isDirty(session)) return true;
+  try {
+    localStorage.setItem(BACKUP_KEY, JSON.stringify({ target: TARGET, draft: session.draft, saved: session.saved }));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 if (typeof window !== "undefined") {
+  // ponytail: two tabs with unsaved edits share the one backup, the last one left wins.
   window.addEventListener("beforeunload", (event) => {
-    if (!leaving && session && isDirty(session)) event.preventDefault(); // the browser asks "Leave site?"
+    if (!backup()) event.preventDefault(); // didn't fit: the browser asks "Leave site?"
   });
-  window.addEventListener("pageshow", () => (leaving = false)); // back from Google via the back button
+  window.addEventListener("pagehide", backup);
+  document.addEventListener("visibilitychange", () => document.hidden && backup()); // phones skip pagehide
   try {
     localStorage.removeItem("fusian-edit-session"); // drafts of the old localStorage-based edit mode
   } catch {
@@ -118,29 +162,12 @@ if (typeof window !== "undefined") {
   }
 }
 
-export function login() {
-  if (!LOCAL && session && isDirty(session)) {
-    try {
-      sessionStorage.setItem(HANDOFF_KEY, JSON.stringify(session));
-    } catch {
-      if (!confirm("Your unsaved changes are too big to keep through the login. Log in anyway and lose them?")) return;
-    }
-  }
-  leaving = true;
-  googleLogin();
-}
-
-/** Back from Google (see finishGoogleLogin): brings the unsaved edits back, also when the login failed. */
-export function finishLogin() {
-  const done = finishGoogleLogin();
-  const unsaved = sessionStorage.getItem(HANDOFF_KEY);
-  sessionStorage.removeItem(HANDOFF_KEY);
-  if (unsaved) set(JSON.parse(unsaved));
-  return done;
-}
+export const login = googleLogin;
+export const finishLogin = finishGoogleLogin;
 
 export function logout() {
   loading = null;
   set(null);
+  dropBackup();
   clearToken();
 }

@@ -152,5 +152,5 @@ Apps Script logs every run under **Executions** (left sidebar) with the full err
 
 - The account picker lists every Google account signed in to the browser. Pick the one in `ALLOWED_EMAILS`; other accounts are turned away.
 - If someone else saved the same file while you were editing, Save refuses. Discard your changes and redo them.
-- Unsaved photos live in memory and are carried through a re-login in browser storage (about 5 MB). With many large photos, Save first and then add more.
+- Unsaved photos are backed up in browser storage (about 5 MB) when you leave the page. With many large photos, Save first and then add more.
 - Local testing of the login: `EDIT_TARGET=main npm run dev` (or a branch name), then use **Log in** on `http://localhost:5173`. Saving commits to the real `main` (or that branch). Plain `npm run dev` skips login and does not save to GitHub.
