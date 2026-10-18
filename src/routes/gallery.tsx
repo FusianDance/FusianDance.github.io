@@ -1,7 +1,7 @@
 import { PostCard } from "@/components/post.card";
 import type { Route } from "./+types/gallery";
 import { posts } from "@/lib/data.server";
-import { useEditDraft, useLiveContent } from "@/lib/edit";
+import { useEditDraft, useLiveContent } from "@/lib/edit/session";
 import { PostsEditor } from "@/components/edit/posts-editor";
 import { seo } from "@/lib/seo";
 

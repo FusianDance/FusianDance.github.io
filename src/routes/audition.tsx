@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Markdown } from "@/components/markdown";
 import { audition } from "@/lib/data.server";
-import { useDraft, useEditDraft } from "@/lib/edit";
+import { useDraft, useEditDraft } from "@/lib/edit/session";
 import { seo } from "@/lib/seo";
 
 // No ./+types/audition: typegen only knows this route while it is enabled (data/pages.yml).

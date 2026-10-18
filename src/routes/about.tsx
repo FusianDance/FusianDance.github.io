@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Markdown } from "@/components/markdown";
 import type { Route } from "./+types/about";
 import { about, contact } from "@/lib/data.server";
-import { useDraft, useEditDraft } from "@/lib/edit";
+import { useDraft, useEditDraft } from "@/lib/edit/session";
 import { seo } from "@/lib/seo";
 
 export const meta: Route.MetaFunction = () =>

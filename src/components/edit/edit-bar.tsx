@@ -4,8 +4,10 @@ import { Eye, LoaderCircle, LogIn, LogOut, Pencil, Save, TriangleAlert, Undo2 } 
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tip } from "@/components/edit/tip";
+import { useToken } from "@/lib/edit/auth";
+import { useDeploy } from "@/lib/edit/deploy";
 import {
-  dropIfStale,
+  discard,
   finishLogin,
   isDirty,
   login,
@@ -14,13 +16,9 @@ import {
   save,
   setPreview,
   startSession,
-  TARGET,
-  TARGET_NOTE,
-  updateDraft,
-  useDeploy,
   useSession,
-  useToken,
-} from "@/lib/edit";
+} from "@/lib/edit/session";
+import { TARGET, TARGET_NOTE } from "@/lib/edit/target";
 
 /** Floating edit controls, shown while logged in: Log out on the left, Discard / Edit-Preview / Save on the right. */
 export function EditBar() {
@@ -47,11 +45,7 @@ export function EditBar() {
   }, [navigate]);
 
   useEffect(() => {
-    dropIfStale().catch((e: Error) => setMessage(e.message));
-  }, []);
-
-  useEffect(() => {
-    if (token && !session) startSession(token).catch((e: Error) => setMessage(e.message));
+    if (token && !session) startSession().catch((e: Error) => setMessage(e.message));
   }, [token, session]);
 
   if (!token && !session && !message) return null;
@@ -68,14 +62,14 @@ export function EditBar() {
   function cancel() {
     if (!confirm("Discard all unsaved changes?")) return;
     setMessage(null);
-    updateDraft(() => session!.base);
+    discard();
   }
 
   async function onSave() {
     setSaving(true);
     setMessage(null);
     try {
-      setCommit(await save(token!, session!));
+      setCommit(await save());
       setMessage("Saved.");
     } catch (e) {
       setMessage((e as Error).message);

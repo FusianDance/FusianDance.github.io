@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { type NavItem, NavItems } from "@/lib/models/nav-item";
 import type { Contact } from "@/lib/models/contact";
 import { FusianIcon } from "@/components/fusian.icon";
-import { login, useDraft } from "@/lib/edit";
+import { login, useDraft } from "@/lib/edit/session";
 
 export function Footer(props: { contact: Contact }) {
   const draft = useDraft();

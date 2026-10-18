@@ -4,7 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { berlinIso, berlinLocal, type AnnouncementEntry } from "@/lib/content";
-import { updateDraft, type Draft } from "@/lib/edit";
+import { updateDraft, type Draft } from "@/lib/edit/session";
 
 const setAnnouncements = (fn: (list: AnnouncementEntry[]) => AnnouncementEntry[]) =>
   updateDraft((d) => ({ ...d, announcements: fn(d.announcements) }));

@@ -90,7 +90,7 @@ Site content lives in `data/` as YAML and is read at build time. Edit it with th
 
 ## 🖊️ Edit Mode (no git needed)
 
-Crew members edit the site right on the site. The footer has a **Log in** button. After login, `/events`, `/gallery`, `/about` and `/audition` turn into editors, the navbar gets a Contact entry (`/edit/contact`, while editing) for the contact info and training hours, and floating icon buttons appear (hover for their names): **Log out** on the left, and on the right **Discard changes**, an **Edit/Preview** toggle (Preview shows the normal pages with your unsaved changes) and **Save**. The about and audition texts are edited like a document (toolbar for headings, bold, lists, highlighted note, link and photos) and saved as Markdown: paste a link onto selected text to link it, and paste, drop or add photos right where they should go (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept in the browser, so they survive a reload or a new login.
+Crew members edit the site right on the site. The footer has a **Log in** button. After login, `/events`, `/gallery`, `/about` and `/audition` turn into editors, the navbar gets a Contact entry (`/edit/contact`, while editing) for the contact info and training hours, and floating icon buttons appear (hover for their names): **Log out** on the left, and on the right **Discard changes**, an **Edit/Preview** toggle (Preview shows the normal pages with your unsaved changes) and **Save**. The about and audition texts are edited like a document (toolbar for headings, bold, lists, highlighted note, link and photos) and saved as Markdown: paste a link onto selected text to link it, and paste, drop or add photos right where they should go (shrunk to max 1600px, saved to `public/uploads/`). **Save** writes all changes to `data/` (and new photos) as **one commit** on `main`, and the site redeploys in about 2 minutes. Unsaved changes are kept until you leave the page (the browser warns you) and survive a new login, but are gone after a reload.
 
 There is no server of our own:
 
@@ -108,12 +108,12 @@ Each member logs in with their own Google account. Only the emails in the `ALLOW
 
 `npm run dev` picks where edit mode loads from and saves to with `EDIT_TARGET`. A red banner on every page tells you when it is not the real site.
 
-- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** only marks your edits as saved in this browser (so **Discard changes** goes back to them); no files change.
+- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** only stores your edits in this browser (so **Discard changes** goes back to them, also after a reload); no files change.
 - `EDIT_TARGET=local npm run dev`: like `browser`, but **Save** writes the changed `data/` files and new photos into your working tree. Review them with `git diff`.
 - `EDIT_TARGET=feat/my-branch npm run dev`: real Google login, loads from and commits to that (pushed) branch instead of `main`. Nothing is deployed.
 - `EDIT_TARGET=main npm run dev`: the live behaviour, **Save** commits to `main` and deploys the site. Only use it on purpose.
 
-Your browser draft remembers where it came from: switching the target, or changing the files (checkout, pull, hand edit) in `browser`/`local` mode, drops it and rereads the files. Builds always use `main`.
+In `browser` mode, the edits saved in this browser are dropped when the files change (checkout, pull, hand edit). Builds always use `main`.
 
 Setup, maintenance and troubleshooting (GitHub App, Google login, Apps Script): [docs/edit-mode-setup.md](docs/edit-mode-setup.md).
 

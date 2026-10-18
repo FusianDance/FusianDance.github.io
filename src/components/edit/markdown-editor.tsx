@@ -30,7 +30,7 @@ import {
 import { Tip } from "@/components/edit/tip";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
-import { updateDraft, type Draft } from "@/lib/edit";
+import { updateDraft, type Draft } from "@/lib/edit/session";
 
 // ponytail: unsaved photos live in localStorage (~5 MB), so shrink them; IndexedDB if people need dozens at once.
 async function shrink(file: File) {
@@ -62,9 +62,7 @@ async function addPhotos(view: EditorView, uploads: Record<string, string>, file
   } catch {
     return "Couldn't read that image.";
   }
-  if (!updateDraft((d) => ({ ...d, uploads: { ...d.uploads, ...added } }))) {
-    return "Not enough browser storage for more unsaved photos. Save first, then add more.";
-  }
+  updateDraft((d) => ({ ...d, uploads: { ...d.uploads, ...added } }));
   Object.assign(uploads, added);
   // The text may have changed while the photos were shrunk.
   const at = Math.min(pos ?? view.state.selection.main.head, view.state.doc.length);

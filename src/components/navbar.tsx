@@ -13,7 +13,8 @@ import { Tip } from "@/components/edit/tip";
 import { FusianIcon } from "@/components/fusian.icon";
 import { Eye, EyeOff, Menu, X } from "lucide-react";
 import { FlaggedPages, NavItems, type NavItem } from "@/lib/models/nav-item";
-import { TARGET_NOTE, updateDraft, useEditDraft } from "@/lib/edit";
+import { updateDraft, useEditDraft } from "@/lib/edit/session";
+import { TARGET_NOTE } from "@/lib/edit/target";
 
 // Edit-only page, in the nav while editing.
 const EDIT_ITEMS: NavItem[] = [{ navTitle: "Contact", appRoute: "/edit/contact" }];
