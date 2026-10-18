@@ -108,7 +108,7 @@ Each member logs in with their own Google account. Only the emails in the `ALLOW
 
 `npm run dev` picks where edit mode loads from and saves to with `EDIT_TARGET`. A red banner on every page tells you when it is not the real site.
 
-- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** is off. Changes stay in your browser only.
+- `npm run dev` (= `browser`): edits the files in your working tree, no Google login (**Log in** just turns on edit mode), **Save** only marks your edits as saved in this browser (so **Discard changes** goes back to them); no files change.
 - `EDIT_TARGET=local npm run dev`: like `browser`, but **Save** writes the changed `data/` files and new photos into your working tree. Review them with `git diff`.
 - `EDIT_TARGET=feat/my-branch npm run dev`: real Google login, loads from and commits to that (pushed) branch instead of `main`. Nothing is deployed.
 - `EDIT_TARGET=main npm run dev`: the live behaviour, **Save** commits to `main` and deploys the site. Only use it on purpose.

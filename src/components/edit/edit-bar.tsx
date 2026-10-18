@@ -158,12 +158,8 @@ export function EditBar() {
                 </ToggleGroupItem>
               </Tip>
             </ToggleGroup>
-            <Tip label={TARGET === "browser" ? "Save (off in browser mode)" : saving ? "Saving…" : "Save"}>
-              <Button
-                size="icon"
-                onClick={onSave}
-                disabled={TARGET === "browser" || !token || !dirty || !!blocker || saving}
-              >
+            <Tip label={saving ? "Saving…" : "Save"}>
+              <Button size="icon" onClick={onSave} disabled={!token || !dirty || !!blocker || saving}>
                 <Save />
               </Button>
             </Tip>

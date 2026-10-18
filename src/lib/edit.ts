@@ -27,7 +27,7 @@ export const TARGET_NOTE =
   TARGET === "main"
     ? null
     : TARGET === "browser"
-      ? "Browser mode: edits stay in this browser, Save is off."
+      ? "Browser mode: Save keeps your edits in this browser only, no files change."
       : TARGET === "local"
         ? "Local mode: Save writes data/ and public/uploads/ in your working tree."
         : `Branch mode: Save commits to ${TARGET}, not main.`;
@@ -289,12 +289,23 @@ function serialize(key: FileKey, draft: Draft, fileText: string) {
   return toYaml(fileText, draft[key]);
 }
 
-/** Commits all changed files (and the photos the Markdown pages use) as one commit on TARGET and returns its sha,
- * or in local mode writes them to disk and returns null. Afterwards the saved draft is the new base. */
+/** The saved draft becomes the base (Discard goes back to it). Edits typed while saving stay in the draft. */
+function rebase(draft: Draft, shas: Session["shas"]) {
+  const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
+  if (current) write(SESSION_KEY, { ...current, base: draft, shas } satisfies Session);
+}
+
+/** Commits all changed files (and the photos the Markdown pages use) as one commit on TARGET and returns its sha.
+ * Local mode writes them to disk instead, browser mode only keeps them in the browser; both return null.
+ * Afterwards the saved draft is the new base. */
 export async function save(token: string, { draft, base, shas }: Session) {
-  if (TARGET === "browser") throw new Error("Browser mode never saves. Use EDIT_TARGET=local or a branch.");
   const changed = KEYS.filter((key) => JSON.stringify(draft[key]) !== JSON.stringify(base[key]));
   if (!changed.length) return null;
+  // shas stay those of the files on disk, so dropIfStale still notices a checkout or pull.
+  if (TARGET === "browser") {
+    rebase(draft, shas);
+    return null;
+  }
   const head = LOCAL ? "" : (await gh<{ object: { sha: string } }>(token, `/git/ref/heads/${TARGET}`)).object.sha;
   const tree: { path: string; mode: string; type: string; content?: string; sha?: string }[] = [];
   const newShas = { ...shas };
@@ -320,8 +331,7 @@ export async function save(token: string, { draft, base, shas }: Session) {
     };
     for (const { path, content } of tree) await put(path, content!);
     for (const [path, dataUrl] of photos) await put(`public${path}`, await (await fetch(dataUrl)).blob());
-    const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
-    if (current) write(SESSION_KEY, { ...current, base: draft, shas: newShas } satisfies Session);
+    rebase(draft, newShas);
     return null;
   }
   for (const [path, dataUrl] of photos) {
@@ -343,10 +353,8 @@ export async function save(token: string, { draft, base, shas }: Session) {
   // not forced: fails if the branch moved since we read it, so nothing gets overwritten
   await gh(token, `/git/refs/heads/${TARGET}`, { method: "PATCH", json: { sha: commit.sha } });
   // Re-reading the branch right away can return the old files, so the new base comes from what we sent.
-  // Edits typed while saving stay in the draft. Saved photos stay in uploads so the preview shows them
-  // until the deploy is live; Log out clears them.
-  const current = JSON.parse(read(SESSION_KEY) ?? "null") as Session | null;
-  if (current) write(SESSION_KEY, { ...current, base: draft, shas: newShas } satisfies Session);
+  // Saved photos stay in uploads so the preview shows them until the deploy is live; Log out clears them.
+  rebase(draft, newShas);
   return commit.sha;
 }
 
