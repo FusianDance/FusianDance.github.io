@@ -13,7 +13,9 @@ export const meta: Route.MetaFunction = () =>
   );
 
 // The editor (CodeMirror) only loads in edit mode, visitors don't download it.
-const AboutEditor = lazy(() => import("@/components/edit/about-editor").then((m) => ({ default: m.AboutEditor })));
+const MarkdownEditor = lazy(() =>
+  import("@/components/edit/markdown-editor").then((m) => ({ default: m.MarkdownEditor })),
+);
 
 export function loader() {
   return { about, contact };
@@ -25,7 +27,7 @@ export default function AboutPage({ loaderData }: Route.ComponentProps) {
   if (editDraft) {
     return (
       <Suspense>
-        <AboutEditor draft={editDraft} />
+        <MarkdownEditor draft={editDraft} field="about" />
       </Suspense>
     );
   }

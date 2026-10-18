@@ -1,6 +1,33 @@
+import { lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Markdown } from "@/components/markdown";
+import { audition } from "@/lib/data.server";
+import { useDraft, useEditDraft } from "@/lib/edit";
+import { seo } from "@/lib/seo";
 
-export default function AuditionPage() {
+// No ./+types/audition: typegen only knows this route while it is enabled (data/pages.yml).
+export const meta = () => seo("/audition/", "Audition", "Apply for the next Fusian Dance Crew audition in Munich.");
+
+// The editor (CodeMirror) only loads in edit mode, visitors don't download it.
+const MarkdownEditor = lazy(() =>
+  import("@/components/edit/markdown-editor").then((m) => ({ default: m.MarkdownEditor })),
+);
+
+export function loader() {
+  return { audition };
+}
+
+export default function AuditionPage({ loaderData }: { loaderData: ReturnType<typeof loader> }) {
+  const draft = useDraft();
+  const editDraft = useEditDraft();
+  if (editDraft) {
+    return (
+      <Suspense>
+        <MarkdownEditor draft={editDraft} field="audition" />
+      </Suspense>
+    );
+  }
+
   // Your Google Form ID - extract from the embed URL between /e/ and /viewform
   const FORM_ID = "1FAIpQLSdJkF7r42bPm_wQUzWIGHB9-jL5-BUvrdT2e6-Ss9p6me2yLQ";
   const formUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/viewform`;
@@ -8,11 +35,9 @@ export default function AuditionPage() {
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <h1 className="mb-8 text-4xl font-bold">Audition Application</h1>
-        <p className="mb-8 text-muted-foreground">
-          Fill out the form below to apply for our upcoming auditions. We&apos;re excited to see what you bring to the
-          stage!
-        </p>
+        <div className="mb-8">
+          <Markdown text={draft?.audition ?? loaderData.audition} images={draft?.uploads} />
+        </div>
 
         {/* Google Form Embed */}
         <Card className="w-full">

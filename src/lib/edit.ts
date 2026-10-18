@@ -22,20 +22,23 @@ const FILES = {
   announcements: "data/announcements.yml",
   posts: "data/insta-posts.yml",
   about: "data/about.md",
+  audition: "data/audition.md",
   contact: "data/contact.yml",
   pages: "data/pages.yml",
 } as const;
 type FileKey = keyof typeof FILES;
 const KEYS = Object.keys(FILES) as FileKey[];
+const isMarkdown = (key: FileKey): key is "about" | "audition" => FILES[key].endsWith(".md");
 
 export type Draft = {
   announcements: AnnouncementEntry[];
   posts: PostEntry[];
   about: string;
+  audition: string;
   contact: Contact;
   /** Flagged page key → enabled (data/pages.yml). Takes effect with the deploy after Save. */
   pages: Record<string, boolean>;
-  /** Photos pasted into the about page and not yet in the repo: "/uploads/<name>.jpg" → data URL. */
+  /** Photos pasted into a Markdown page and not yet in the repo: "/uploads/<name>.jpg" → data URL. */
   uploads: Record<string, string>;
 };
 /** draft = being edited, base = as loaded from GitHub, shas = blob shas of the loaded files (conflict check),
@@ -98,9 +101,9 @@ const notExpired = (t: Token) => Date.parse(t.expires) > Date.now() + 60_000;
 
 /** The GitHub token, or null when logged out or about to expire. */
 export const useToken = () => useStored<Token>(TOKEN_KEY, notExpired)?.token ?? null;
-// Drafts from before announcements had startDate (saving would be refused) or before data/pages.yml (no sha
-// to save it with): dropped, a fresh one is loaded.
-const current = (s: Session) => !!s.draft.pages && s.draft.announcements.every((a) => a.startDate);
+// Drafts from before announcements had startDate (saving would be refused) or before the newest data file
+// (no sha to save it with): dropped, a fresh one is loaded.
+const current = (s: Session) => s.draft.audition != null && s.draft.announcements.every((a) => a.startDate);
 export const useSession = () => useStored<Session>(SESSION_KEY, current);
 export const useDraft = () => useSession()?.draft ?? null;
 /** The draft while the pages show their editors (logged in, not previewing), else null. */
@@ -221,7 +224,7 @@ async function getFile(token: string, key: FileKey, ref: string) {
 export async function startSession(token: string) {
   const files = await Promise.all(KEYS.map((key) => getFile(token, key, "main")));
   const base = Object.fromEntries(
-    KEYS.map((key, i) => [key, key === "about" ? files[i].text : (parse(files[i].text) ?? [])]),
+    KEYS.map((key, i) => [key, isMarkdown(key) ? files[i].text : (parse(files[i].text) ?? [])]),
   ) as Omit<Draft, "uploads">;
   const shas = Object.fromEntries(KEYS.map((key, i) => [key, files[i].sha])) as Session["shas"];
   const draft = { ...base, uploads: {} };
@@ -243,7 +246,7 @@ export function problem({ announcements, contact }: Draft) {
 }
 
 function serialize(key: FileKey, draft: Draft, fileText: string) {
-  if (key === "about") return draft.about.endsWith("\n") ? draft.about : draft.about + "\n";
+  if (isMarkdown(key)) return draft[key].endsWith("\n") ? draft[key] : draft[key] + "\n";
   if (key === "announcements") {
     return toYaml(
       fileText,
@@ -255,7 +258,7 @@ function serialize(key: FileKey, draft: Draft, fileText: string) {
   return toYaml(fileText, draft[key]);
 }
 
-/** Commits all changed files (and the photos the about page uses) as one commit on main and returns its sha.
+/** Commits all changed files (and the photos the Markdown pages use) as one commit on main and returns its sha.
  * Afterwards the saved draft is the new base. */
 export async function save(token: string, { draft, base, shas }: Session) {
   const changed = KEYS.filter((key) => JSON.stringify(draft[key]) !== JSON.stringify(base[key]));
@@ -276,7 +279,7 @@ export async function save(token: string, { draft, base, shas }: Session) {
   }
   // Photos: binary, so they go up as blobs first. Ones deleted from the text again are dropped.
   for (const [path, dataUrl] of Object.entries(draft.uploads)) {
-    if (path in base.uploads || !draft.about.includes(path)) continue;
+    if (path in base.uploads || ![draft.about, draft.audition].some((text) => text.includes(path))) continue;
     const blob = await gh<{ sha: string }>(token, "/git/blobs", {
       method: "POST",
       json: { content: dataUrl.slice(dataUrl.indexOf(",") + 1), encoding: "base64" },

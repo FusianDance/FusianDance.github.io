@@ -21,4 +21,5 @@ export const pages = toPages(
   process.env.FEATURES,
 );
 export const about = readFileSync(join(process.cwd(), "data", "about.md"), "utf8");
+export const audition = readFileSync(join(process.cwd(), "data", "audition.md"), "utf8");
 export const privacy = readFileSync(join(process.cwd(), "data", "privacy.md"), "utf8");

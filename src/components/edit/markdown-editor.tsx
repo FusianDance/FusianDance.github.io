@@ -292,12 +292,13 @@ const tools: Tool[] = [
   },
 ];
 
-export function AboutEditor({ draft }: { draft: Draft }) {
+/** Edits a Markdown page of the draft (data/<field>.md). */
+export function MarkdownEditor({ draft, field }: { draft: Draft; field: "about" | "audition" }) {
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const parent = useRef<HTMLDivElement>(null);
   // What the editor last wrote, to tell its own updates from outside ones (Discard changes).
-  const written = useRef(draft.about);
+  const written = useRef(draft[field]);
   // Shown by the live preview; grows as photos are added, so it's created once and mutated.
   const [uploads] = useState(() => ({ ...draft.uploads }));
   const [view, setView] = useState<EditorView | null>(null);
@@ -319,7 +320,7 @@ export function AboutEditor({ draft }: { draft: Draft }) {
         livePreview((src) => uploads[src] ?? src),
         theme,
         EditorView.lineWrapping,
-        EditorView.contentAttributes.of({ "aria-label": "About page text" }),
+        EditorView.contentAttributes.of({ "aria-label": `${field} page text` }),
         EditorView.domEventHandlers({
           // Photos go where they're dropped or pasted. A link pasted onto selected text links it.
           drop(event, v) {
@@ -347,7 +348,7 @@ export function AboutEditor({ draft }: { draft: Draft }) {
         EditorView.updateListener.of((u) => {
           if (u.docChanged && u.state.doc.toString() !== written.current) {
             written.current = u.state.doc.toString();
-            updateDraft((d) => ({ ...d, about: written.current }));
+            updateDraft((d) => ({ ...d, [field]: written.current }));
           }
           if (u.docChanged || u.selectionSet) setActive(tools.map((t) => t.active(u.state)));
         }),
@@ -356,14 +357,14 @@ export function AboutEditor({ draft }: { draft: Draft }) {
     setView(v);
     setActive(tools.map((t) => t.active(v.state)));
     return () => v.destroy();
-  }, [uploads]);
+  }, [uploads, field]);
 
   useEffect(() => {
-    if (view && draft.about !== written.current) {
-      written.current = draft.about;
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: draft.about } });
+    if (view && draft[field] !== written.current) {
+      written.current = draft[field];
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: draft[field] } });
     }
-  }, [view, draft.about]);
+  }, [view, draft, field]);
 
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
