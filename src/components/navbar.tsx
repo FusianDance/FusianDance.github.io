@@ -36,7 +36,7 @@ function PageToggle({ item, on, className }: { item: Item; on: boolean; classNam
   );
 }
 
-/** pages: keys of the flagged pages in this build. While editing, all flagged pages show, each with a switch;
+/** pages: keys of the flagged pages in this build. While editing, all flagged pages show, each with an on/off button;
  * ones not built yet aren't links. */
 export function Navbar({ pages }: { pages: string[] }) {
   const pathname = useLocation().pathname.replace(/(.)\/$/, "$1");
