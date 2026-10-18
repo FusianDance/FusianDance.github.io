@@ -23,6 +23,7 @@ const FILES = {
   posts: "data/insta-posts.yml",
   about: "data/about.md",
   contact: "data/contact.yml",
+  pages: "data/pages.yml",
 } as const;
 type FileKey = keyof typeof FILES;
 const KEYS = Object.keys(FILES) as FileKey[];
@@ -32,6 +33,8 @@ export type Draft = {
   posts: PostEntry[];
   about: string;
   contact: Contact;
+  /** Flagged page key → enabled (data/pages.yml). Takes effect with the deploy after Save. */
+  pages: Record<string, boolean>;
   /** Photos pasted into the about page and not yet in the repo: "/uploads/<name>.jpg" → data URL. */
   uploads: Record<string, string>;
 };
@@ -95,8 +98,9 @@ const notExpired = (t: Token) => Date.parse(t.expires) > Date.now() + 60_000;
 
 /** The GitHub token, or null when logged out or about to expire. */
 export const useToken = () => useStored<Token>(TOKEN_KEY, notExpired)?.token ?? null;
-// Drafts from before announcements had startDate: dropped, a fresh one is loaded (saving it would be refused anyway).
-const current = (s: Session) => s.draft.announcements.every((a) => a.startDate);
+// Drafts from before announcements had startDate (saving would be refused) or before data/pages.yml (no sha
+// to save it with): dropped, a fresh one is loaded.
+const current = (s: Session) => !!s.draft.pages && s.draft.announcements.every((a) => a.startDate);
 export const useSession = () => useStored<Session>(SESSION_KEY, current);
 export const useDraft = () => useSession()?.draft ?? null;
 /** The draft while the pages show their editors (logged in, not previewing), else null. */

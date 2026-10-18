@@ -10,11 +10,6 @@ on:
       - ".github/workflows/build.yml"
   workflow_call:
     inputs:
-      additional_build_env:
-        description: "additional environment variables for build step"
-        required: false
-        default: ""
-        type: string
       ref:
         description: "Git ref to build (default: triggering commit)"
         required: false
@@ -54,10 +49,7 @@ jobs:
         run: npm run typecheck
 
       - name: Build application
-        run: |
-          # Export additional environment variables if provided
-          export ${{ inputs.additional_build_env }}
-          npm run build
+        run: npm run build
         env:
           NODE_ENV: production
 

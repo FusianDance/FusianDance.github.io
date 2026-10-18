@@ -126,7 +126,7 @@ npm run build
 
 The static files will be generated in the `build/client` directory.
 
-Feature flags are `FEATURE_<KEY>=true` environment variables read at build time (and in dev), e.g. `FEATURE_AUDITION=true npm run build`. A flagged route is defined conditionally in `src/routes.ts` with a matching entry in `src/lib/models/nav-item.ts`; disabled pages are not built at all.
+Page flags live in `data/pages.yml` (page key → `true`/`false`, e.g. `audition: false`); a disabled page is not built or prerendered. Set `FEATURES` to override the file locally with a comma-separated list of enabled pages, e.g. `FEATURES=audition npm run dev` (`FEATURES=` enables none). Flaggable pages are registered in `FlaggedPages` in `src/lib/models/nav-item.ts`. In edit mode the navbar shows every flagged page with a switch; Save commits `data/pages.yml` and the push redeploys.
 
 ## 🔄 CI/CD Workflows
 

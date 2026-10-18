@@ -8,20 +8,45 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Tip } from "@/components/edit/tip";
 import { FusianIcon } from "@/components/fusian.icon";
 import { Menu, X } from "lucide-react";
-import { NavItems, type NavItem } from "@/lib/models/nav-item";
-import { useEditDraft } from "@/lib/edit";
+import { FlaggedPages, NavItems, type NavItem } from "@/lib/models/nav-item";
+import { updateDraft, useEditDraft } from "@/lib/edit";
 
 // Edit-only page, in the nav while editing.
 const EDIT_ITEMS: NavItem[] = [{ navTitle: "Contact", appRoute: "/edit/contact" }];
 
-export function Navbar() {
+type Item = NavItem & { key?: string };
+
+/** Switches a flagged page on or off in the draft; the deploy after Save builds or drops it. */
+function PageSwitch({ item, on, className }: { item: Item; on: boolean; className: string }) {
+  return (
+    <Tip label={`${item.navTitle} page online (after Save and deploy)`}>
+      <Switch
+        size="sm"
+        className={className}
+        checked={on}
+        onCheckedChange={(checked) => updateDraft((d) => ({ ...d, pages: { ...d.pages, [item.key!]: checked } }))}
+      />
+    </Tip>
+  );
+}
+
+/** pages: keys of the flagged pages in this build. While editing, all flagged pages show, each with a switch;
+ * ones not built yet aren't links. */
+export function Navbar({ pages }: { pages: string[] }) {
   const pathname = useLocation().pathname.replace(/(.)\/$/, "$1");
   // The mobile menu remembers the page it was opened on, so it closes on navigation.
   const [menuOpenedAt, setMenuOpenedAt] = React.useState<string | null>(null);
   const isMobileMenuOpen = menuOpenedAt === pathname;
-  const items = useEditDraft() ? [...NavItems, ...EDIT_ITEMS] : NavItems;
+  const draft = useEditDraft();
+  const items: Item[] = draft
+    ? [...NavItems, ...FlaggedPages, ...EDIT_ITEMS]
+    : [...NavItems, ...FlaggedPages.filter((page) => pages.includes(page.key))];
+  const built = (item: Item) => !item.key || pages.includes(item.key);
+  const on = (item: Item) => !item.key || !draft || !!draft.pages[item.key];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,17 +63,25 @@ export function Navbar() {
           {/* Desktop Navigation Menu */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              {items.map((item: NavItem) => (
-                <NavigationMenuItem key={item.appRoute}>
-                  <NavigationMenuLink
-                    render={<Link to={item.appRoute} />}
-                    className={cn(
-                      "inline-flex px-4 py-2 text-sm font-medium",
-                      pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground",
-                    )}
-                  >
-                    {item.navTitle}
-                  </NavigationMenuLink>
+              {items.map((item) => (
+                <NavigationMenuItem key={item.appRoute} className="relative">
+                  {built(item) ? (
+                    <NavigationMenuLink
+                      render={<Link to={item.appRoute} />}
+                      className={cn(
+                        "inline-flex px-4 py-2 text-sm font-medium",
+                        pathname === item.appRoute ? "bg-accent text-accent-foreground" : "text-foreground",
+                        !on(item) && "text-muted-foreground",
+                      )}
+                    >
+                      {item.navTitle}
+                    </NavigationMenuLink>
+                  ) : (
+                    <span className="inline-flex px-4 py-2 text-sm font-medium text-muted-foreground">
+                      {item.navTitle}
+                    </span>
+                  )}
+                  {draft && item.key && <PageSwitch item={item} on={on(item)} className="absolute -top-1 -right-1" />}
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
@@ -71,20 +104,29 @@ export function Navbar() {
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="flex flex-col border-t p-2">
-              {items.map((item: NavItem) => (
-                <Link
-                  key={item.appRoute}
-                  to={item.appRoute}
-                  className={cn(
-                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.appRoute
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-accent/50",
+              {items.map((item) => (
+                <div key={item.appRoute} className="relative">
+                  {built(item) ? (
+                    <Link
+                      to={item.appRoute}
+                      className={cn(
+                        "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                        pathname === item.appRoute
+                          ? "bg-accent text-accent-foreground"
+                          : "text-foreground hover:bg-accent/50",
+                        !on(item) && "text-muted-foreground",
+                      )}
+                      onClick={() => setMenuOpenedAt(null)}
+                    >
+                      {item.navTitle}
+                    </Link>
+                  ) : (
+                    <span className="block px-3 py-2 text-base font-medium text-muted-foreground">{item.navTitle}</span>
                   )}
-                  onClick={() => setMenuOpenedAt(null)}
-                >
-                  {item.navTitle}
-                </Link>
+                  {draft && item.key && (
+                    <PageSwitch item={item} on={on(item)} className="absolute top-1/2 right-3 -translate-y-1/2" />
+                  )}
+                </div>
               ))}
             </div>
           </div>

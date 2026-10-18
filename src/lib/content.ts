@@ -75,6 +75,24 @@ export function toPosts(entries: PostEntry[]): InstaPost[] {
   });
 }
 
+/** Keys of the enabled flagged pages: FEATURES ("audition,other", "" = none) if set, else data/pages.yml.
+ * known: the keys of FlaggedPages. */
+export function toPages(entries: Record<string, boolean>, known: string[], features?: string): string[] {
+  for (const [key, on] of Object.entries(entries)) {
+    if (typeof on !== "boolean") throw new Error(`data/pages.yml: "${key}" must be true or false`);
+  }
+  const keys =
+    features == null
+      ? Object.keys(entries).filter((key) => entries[key])
+      : features
+          .split(",")
+          .map((key) => key.trim())
+          .filter(Boolean);
+  const unknown = [...Object.keys(entries), ...keys].find((key) => !known.includes(key));
+  if (unknown) throw new Error(`data/pages.yml or FEATURES: unknown page "${unknown}" (see FlaggedPages)`);
+  return keys;
+}
+
 /** Replace the content of a YAML data file, keeping its header comment. */
 export function toYaml(text: string, entries: unknown) {
   const doc: Document = parseDocument(text);

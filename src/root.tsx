@@ -13,7 +13,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { EditBar } from "@/components/edit/edit-bar";
-import { contact } from "@/lib/data.server";
+import { contact, pages } from "@/lib/data.server";
 
 export const meta: Route.MetaFunction = () => [
   { title: "Fusian Dance Crew" },
@@ -21,7 +21,7 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 export function loader() {
-  return { contact };
+  return { contact, pages };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <div className="flex flex-col">
-            <Navbar />
+            <Navbar pages={data?.pages ?? []} />
             <main className="flex-1">{children}</main>
             {data && <Footer contact={data.contact} />}
           </div>
